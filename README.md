@@ -9,7 +9,7 @@ OpenCode is a powerful AI coding assistant — but by default it runs on your ho
 - 💾 **Persistent session state** — each project retains its own OpenCode history and session between container restarts
 - 🧹 **Clean environment** — no bleed-over between projects; rebuild any time for a fresh start
 
-ocs-sandbox uses [mise](https://mise.jdx.dev/) to manage software inside the container. **mise does not need to be installed on your host machine**, though using it on the host as well is recommended for a consistent toolchain experience.
+opencode-sandbox uses [mise](https://mise.jdx.dev/) to manage software inside the container. **mise does not need to be installed on your host machine**, though using it on the host as well is recommended for a consistent toolchain experience.
 
 ---
 
@@ -53,7 +53,7 @@ ocs-start-container
 
 ## Commands
 
-All commands must be run from the **root of your project**.
+`ocs-rebuild-container` must be run from the **root of your project**. All other commands can be run from the project root or any subdirectory inside the same project.
 
 ### `ocs-rebuild-container`
 
@@ -61,7 +61,7 @@ Prepares build artifacts and builds the Docker image. Run this once initially an
 
 This will:
 - Derive a container name from your project directory (e.g. `opencode-my-project`)
-- Generate a random server password saved to `.opencode-sandbox/opencode-password`
+- Generate a random server password saved to `.opencode-sandbox/opencode-password` with owner-only permissions
 - Copy `mise.toml` into the build context
 - Build the Docker image
 
@@ -69,6 +69,7 @@ This will:
 
 Starts the sandbox for the current project.
 
+- Can be run from the project root or any subdirectory inside the same project
 - Resumes the existing container if it was previously stopped (state is preserved)
 - Creates a fresh container on first run
 - Mounts your project root as `/workspace` inside the container
@@ -77,13 +78,19 @@ Starts the sandbox for the current project.
 
 ### `ocs-web`
 
-Opens `http://127.0.0.1:4096` in your default browser.
+Can be run from the project root or any subdirectory inside the same project.
+
+Opens `http://127.0.0.1:4096` in your default browser on macOS or Linux.
 
 ### `ocs-web-auth`
 
-Opens the browser with credentials embedded in the URL (basic auth). Use this on first visit to authenticate your browser session.
+Can be run from the project root or any subdirectory inside the same project.
+
+Opens the browser with credentials embedded in the URL (basic auth) on macOS or Linux. Use this on first visit to authenticate your browser session.
 
 ### `ocs-terminal`
+
+Can be run from the project root or any subdirectory inside the same project.
 
 Attaches an OpenCode terminal session to the running container.
 
@@ -105,14 +112,14 @@ Attaches an OpenCode terminal session to the running container.
 ## Project layout
 
 ```
-ocs-sandbox/
+opencode-sandbox/
 ├── bin/
 │   ├── ocs-rebuild-container   # Build the Docker image
 │   ├── ocs-start-container     # Start / resume the container
 │   ├── ocs-terminal            # Attach a terminal session
 │   ├── ocs-web                 # Open the web UI
 │   └── ocs-web-auth            # Open the web UI with authentication
-├── config                      # Shared configuration (sourced by bin scripts)
+├── shared                      # Shared configuration, utilities, and guards (sourced by bin scripts)
 ├── Dockerfile
 ├── entrypoint.sh
 └── README.md
@@ -120,13 +127,19 @@ ocs-sandbox/
 
 ## Per-project state
 
-Each project gets its own isolated container named after the project directory (e.g. `opencode-my-project`). State is stored in `.opencode-sandbox/` at the project root (git-ignored):
+Each project gets its own isolated container named after the project directory (e.g. `opencode-my-project`). State is stored in `.opencode-sandbox/` at the project root:
 
 ```
 .opencode-sandbox/
-├── container-name      # Locked container name for this project
-├── opencode-password   # Generated server password
-└── mise.toml           # Copied from project root at build time
+├── container-name        # Locked container name for this project
+├── opencode-password     # Generated server password (created with owner-only permissions)
+├── mise.toml             # Copied from project root at build time
+├── docker-build.log      # Docker build output (created during build)
+└── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```
+
+OpenCode state (including session history, configuration, and cache) is persisted across container restarts by mounting `.opencode-sandbox/opencode-state/` as `/home/dev/.local/share/opencode` inside the container.
+
+Add `.opencode-sandbox/` to the sandboxed project's ignore rules so these generated files do not get committed.
 
 

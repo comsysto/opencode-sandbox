@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Source common configuration
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "${SCRIPT_DIR}/../config"
+source "${SCRIPT_DIR}/../shared"
 
-require_sandbox_dir
+use_sandbox_root
+print_sandbox_dir
 
-open "http://${LOCALHOST}:${PORT}"
+
+open_url "http://${LOCALHOST}:${PORT}"
 

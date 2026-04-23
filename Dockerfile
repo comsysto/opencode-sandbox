@@ -20,7 +20,10 @@ RUN if ! getent passwd ${USER_ID} > /dev/null 2>&1; then \
 ;fi
 
 RUN mkdir -p /workspace
-RUN chown -R ${USER_ID}:${GROUP_ID} /workspace
+# precreate directory where we mount the volume for opencode and setup permissions for the dev user
+# otherwise the directory will be created by root when mounting and the dev user won't have permissions to write to it
+RUN mkdir -p /home/dev/.local/share
+RUN chown -R ${USER_ID}:${GROUP_ID} /workspace /home/dev/.local
 
 RUN curl https://mise.run | sh
 

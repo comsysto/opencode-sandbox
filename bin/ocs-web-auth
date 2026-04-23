@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Source common configuration
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "${SCRIPT_DIR}/../config"
+source "${SCRIPT_DIR}/../shared"
 
-require_sandbox_dir
+use_sandbox_root
+print_sandbox_dir
+
 
 OPENCODE_SERVER_PASSWORD="$(cat "${OPENCODE_PASSWORD_FILE}")"
 
 echo "try to authenticate via basic auth, you can close the browser tab"
-open "http://opencode:${OPENCODE_SERVER_PASSWORD}@${LOCALHOST}:${PORT}"
+open_url "http://opencode:${OPENCODE_SERVER_PASSWORD}@${LOCALHOST}:${PORT}"
 

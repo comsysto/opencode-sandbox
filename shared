@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Shared configuration, utilities, and guards for sandbox scripts
+# shellcheck disable=SC2034  # Variables are used by sourcing scripts
+
+# Resolve directories
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX_HOME="${SCRIPT_DIR}"
+ROOT_DIR="$(pwd)"
+
+refresh_root_paths() {
+  ROOT_DIR="${1:?root directory is required}"
+  OPENCODE_SANDBOX_DIR="${ROOT_DIR}/.opencode-sandbox"
+
+  # File paths
+  OPENCODE_PASSWORD_FILE="${OPENCODE_SANDBOX_DIR}/opencode-password"
+  MISE_CONFIG_ROOT_FILE="${ROOT_DIR}/mise.toml"
+  MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
+  CONTAINER_NAME_FILE="${OPENCODE_SANDBOX_DIR}/container-name"
+  OPENCODE_STATE_DIR="${OPENCODE_SANDBOX_DIR}/opencode-state"
+
+  # Container name: read from file if present, otherwise derive from project directory name
+  if [[ -f "${CONTAINER_NAME_FILE}" ]]; then
+    SANDBOX_NAME="$(cat "${CONTAINER_NAME_FILE}")"
+  else
+    SANDBOX_NAME="opencode-$(basename "${ROOT_DIR}")"
+  fi
+}
+
+find_sandbox_root() {
+  local dir
+
+  dir="$(pwd)"
+
+  while [[ "${dir}" != "/" ]]; do
+    if [[ -d "${dir}/.opencode-sandbox" ]]; then
+      printf '%s\n' "${dir}"
+      return 0
+    fi
+
+    dir="$(dirname "${dir}")"
+  done
+
+  if [[ -d "/.opencode-sandbox" ]]; then
+    printf '/\n'
+    return 0
+  fi
+
+  return 1
+}
+
+use_sandbox_root() {
+  local detected_root
+
+  detected_root="$(find_sandbox_root)" || {
+    echo "No .opencode-sandbox directory found in the current directory or any parent directory of $(pwd)." >&2
+    echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container from your project root first." >&2
+    return 1
+  }
+
+  refresh_root_paths "${detected_root}"
+}
+
+print_sandbox_dir() {
+  echo ">> using sandbox directory: ${OPENCODE_SANDBOX_DIR}"
+}
+
+refresh_root_paths "${ROOT_DIR}"
+
+# Network configuration
+PORT=4096
+LOCALHOST=127.0.0.1
+
+open_url() {
+  local url="${1:?URL is required}"
+  local opener
+  local -a openers
+
+  case "$(uname -s)" in
+    Darwin)
+      openers=(open)
+      ;;
+    Linux)
+      openers=(xdg-open open)
+      ;;
+    *)
+      openers=(open xdg-open)
+      ;;
+  esac
+
+  for opener in "${openers[@]}"; do
+    if command -v "${opener}" >/dev/null 2>&1; then
+      "${opener}" "${url}"
+      return 0
+    fi
+  done
+
+  echo "Could not find a supported browser opener. Install xdg-open or open the URL manually: ${url}" >&2
+  return 1
+}
+

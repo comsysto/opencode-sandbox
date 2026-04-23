@@ -4,19 +4,27 @@ set -euo pipefail
 # Source common configuration
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "${SCRIPT_DIR}/../config"
+source "${SCRIPT_DIR}/../shared"
+
+print_sandbox_dir
 
 GROUP_ID="$(id -g)"
 USER_ID="$(id -u)"
 # Generate a 48-character random hexadecimal password from /dev/urandom (od reads 24 bytes, converts to 48 hex chars)
 OPENCODE_PASSWORD="$(od -An -tx1 -N24 /dev/urandom | tr -d ' \n')"
 
+umask u=rwx,go=
 mkdir -p "${OPENCODE_SANDBOX_DIR}"
+chmod u=rwx,go= "${OPENCODE_SANDBOX_DIR}"
+
+mkdir -p "${OPENCODE_STATE_DIR}"
+chmod u=rwx,go= "${OPENCODE_STATE_DIR}"
 
 printf '%s\n' "${SANDBOX_NAME}" > "${CONTAINER_NAME_FILE}"
 echo "Container name: ${SANDBOX_NAME}"
 
 printf '%s\n' "${OPENCODE_PASSWORD}" > "${OPENCODE_PASSWORD_FILE}"
+chmod u=rw,go= "${OPENCODE_PASSWORD_FILE}"
 echo "Generated OpenCode password and saved it to ${OPENCODE_PASSWORD_FILE}"
 
 echo "Copying MISE config from ${MISE_CONFIG_ROOT_FILE} ..."
@@ -25,21 +33,27 @@ cp "${MISE_CONFIG_ROOT_FILE}" "${MISE_CONFIG_SANDBOX_FILE}"
 echo "Copying entrypoint script ..."
 cp "${SANDBOX_HOME}/entrypoint.sh" "${OPENCODE_SANDBOX_DIR}/entrypoint.sh"
 
-echo "Building Container Image ${SANDBOX_NAME}..."
-echo "USER_ID=${USER_ID}"
-echo "GROUP_ID=${GROUP_ID}"
-
 if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   echo "Removing existing container ${SANDBOX_NAME}..."
   docker rm -f "${SANDBOX_NAME}" >/dev/null
 fi
 
-docker build \
+
+echo "Building Container Image '${SANDBOX_NAME}' (USER_ID=${USER_ID} GROUP_ID=${GROUP_ID})..."
+DOCKER_BUILD_LOG="${OPENCODE_SANDBOX_DIR}/docker-build.log"
+
+if docker build \
   --build-arg "USER_ID=${USER_ID}" \
   --build-arg "GROUP_ID=${GROUP_ID}" \
   -t "${SANDBOX_NAME}" \
   -f "${SANDBOX_HOME}/Dockerfile" \
-  "${OPENCODE_SANDBOX_DIR}"
+  "${OPENCODE_SANDBOX_DIR}" > "${DOCKER_BUILD_LOG}" 2>&1; then
+  echo "✓ Docker image '${SANDBOX_NAME}' built successfully"
+else
+  echo "✗ Docker build failed. Output:"
+  cat "${DOCKER_BUILD_LOG}"
+  exit 1
+fi
 
 
 
