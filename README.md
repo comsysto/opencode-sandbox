@@ -2,7 +2,7 @@
 
 OpenCode is a powerful AI coding assistant — but by default it runs on your host machine with broad access to your environment, shared session state, and a single global configuration for all projects.
 
-**ocs-sandbox** runs OpenCode inside a Docker container, giving each project its own isolated environment:
+**opencode-sandbox** runs OpenCode inside a Docker container, giving each project its own isolated environment:
 
 - 🔒 **Scoped access** — OpenCode can only see the project workspace, nothing else on your machine
 - 🧩 **Per-project configuration** — AI providers, API keys, and model settings are configured independently per project
