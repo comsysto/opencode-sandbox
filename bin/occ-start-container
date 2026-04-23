@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Source common configuration
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/../config"
+
+cleanup() {
+  echo
+  echo "Stopping Container ${SANDBOX_NAME}..."
+  docker stop "${SANDBOX_NAME}" >/dev/null 2>&1 || true
+}
+
+trap cleanup INT TERM
+
+require_sandbox_dir
+
+if [[ ! -f "${OPENCODE_PASSWORD_FILE}" || ! -f "${MISE_CONFIG_SANDBOX_FILE}" ]]; then
+  echo "Missing sandbox build artifacts in ${OPENCODE_SANDBOX_DIR}."
+  echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container first."
+  exit 1
+fi
+
+if ! docker image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+  echo "Docker image ${SANDBOX_NAME} is not available locally."
+  echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container first."
+  exit 1
+fi
+
+if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+  echo "Resuming existing container ${SANDBOX_NAME}..."
+  docker start -ai "${SANDBOX_NAME}"
+else
+  echo "Creating container ${SANDBOX_NAME}..."
+  docker run --init -it --name "${SANDBOX_NAME}" -p "${LOCALHOST}:${PORT}:4096" -v "${ROOT_DIR}:/workspace" "${SANDBOX_NAME}"
+fi
+
+
+

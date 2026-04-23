@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Source common configuration
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/../config"
+
+require_sandbox_dir
+
+open "http://${LOCALHOST}:${PORT}"
+

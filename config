@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Common configuration for sandbox scripts
+# shellcheck disable=SC2034  # Variables are used by sourcing scripts
+
+# Resolve directories
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX_HOME="${SCRIPT_DIR}"
+ROOT_DIR="$(pwd)"
+OPENCODE_SANDBOX_DIR="${ROOT_DIR}/.opencode-sandbox"
+
+# File paths
+OPENCODE_PASSWORD_FILE="${OPENCODE_SANDBOX_DIR}/opencode-password"
+MISE_CONFIG_ROOT_FILE="${ROOT_DIR}/mise.toml"
+MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
+CONTAINER_NAME_FILE="${OPENCODE_SANDBOX_DIR}/container-name"
+
+# Container name: read from file if present, otherwise derive from project directory name
+if [[ -f "${CONTAINER_NAME_FILE}" ]]; then
+  SANDBOX_NAME="$(cat "${CONTAINER_NAME_FILE}")"
+else
+  SANDBOX_NAME="opencode-$(basename "${ROOT_DIR}")"
+fi
+
+# Network configuration
+PORT=4096
+LOCALHOST=127.0.0.1
+
+# Guard: call this in every script that requires an initialised sandbox
+require_sandbox_dir() {
+  if [[ ! -d "${OPENCODE_SANDBOX_DIR}" ]]; then
+    echo "No .opencode-sandbox directory found in $(pwd)."
+    echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container from your project root first."
+    exit 1
+  fi
+}
+
+
+

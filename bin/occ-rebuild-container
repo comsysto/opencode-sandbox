@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Source common configuration
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/../config"
+
+GROUP_ID="$(id -g)"
+USER_ID="$(id -u)"
+OPENCODE_PASSWORD="$(openssl rand -base64 20)"
+
+mkdir -p "${OPENCODE_SANDBOX_DIR}"
+
+printf '%s\n' "${SANDBOX_NAME}" > "${CONTAINER_NAME_FILE}"
+echo "Container name: ${SANDBOX_NAME}"
+
+printf '%s\n' "${OPENCODE_PASSWORD}" > "${OPENCODE_PASSWORD_FILE}"
+echo "Generated OpenCode password and saved it to ${OPENCODE_PASSWORD_FILE}"
+
+echo "Copying MISE config from ${MISE_CONFIG_ROOT_FILE} ..."
+cp "${MISE_CONFIG_ROOT_FILE}" "${MISE_CONFIG_SANDBOX_FILE}"
+
+echo "Copying entrypoint script ..."
+cp "${SANDBOX_HOME}/entrypoint.sh" "${OPENCODE_SANDBOX_DIR}/entrypoint.sh"
+
+echo "Building Container Image ${SANDBOX_NAME}..."
+echo "USER_ID=${USER_ID}"
+echo "GROUP_ID=${GROUP_ID}"
+
+if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+  echo "Removing existing container ${SANDBOX_NAME}..."
+  docker rm -f "${SANDBOX_NAME}" >/dev/null
+fi
+
+docker build \
+  --build-arg "USER_ID=${USER_ID}" \
+  --build-arg "GROUP_ID=${GROUP_ID}" \
+  -t "${SANDBOX_NAME}" \
+  -f "${SANDBOX_HOME}/Dockerfile" \
+  "${OPENCODE_SANDBOX_DIR}"
+
+
+
+
+
+
