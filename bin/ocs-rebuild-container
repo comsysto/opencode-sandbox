@@ -8,8 +8,8 @@ source "${SCRIPT_DIR}/../config"
 
 GROUP_ID="$(id -g)"
 USER_ID="$(id -u)"
-# Generate a 32-character random hexadecimal password from /dev/urandom (od reads 16 bytes, converts to 32 hex chars)
-OPENCODE_PASSWORD="$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')"
+# Generate a 48-character random hexadecimal password from /dev/urandom (od reads 24 bytes, converts to 48 hex chars)
+OPENCODE_PASSWORD="$(od -An -tx1 -N24 /dev/urandom | tr -d ' \n')"
 
 mkdir -p "${OPENCODE_SANDBOX_DIR}"
 
