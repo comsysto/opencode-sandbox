@@ -29,7 +29,7 @@ LOCALHOST=127.0.0.1
 require_sandbox_dir() {
   if [[ ! -d "${OPENCODE_SANDBOX_DIR}" ]]; then
     echo "No .opencode-sandbox directory found in $(pwd)."
-    echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container from your project root first."
+    echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container from your project root first."
     exit 1
   fi
 }

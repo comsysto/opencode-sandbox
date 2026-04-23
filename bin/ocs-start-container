@@ -18,13 +18,13 @@ require_sandbox_dir
 
 if [[ ! -f "${OPENCODE_PASSWORD_FILE}" || ! -f "${MISE_CONFIG_SANDBOX_FILE}" ]]; then
   echo "Missing sandbox build artifacts in ${OPENCODE_SANDBOX_DIR}."
-  echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container first."
+  echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container first."
   exit 1
 fi
 
 if ! docker image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   echo "Docker image ${SANDBOX_NAME} is not available locally."
-  echo "Run ${SANDBOX_HOME}/bin/occ-rebuild-container first."
+  echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container first."
   exit 1
 fi
 
