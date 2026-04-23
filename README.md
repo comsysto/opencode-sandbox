@@ -19,7 +19,7 @@ Clone this repository and add the `bin/` directory to your `PATH`:
 
 ```bash
 git clone https://github.com/comsysto/opencode-sandbox.git
-export PATH="/path/to/occ-sandbox/bin:$PATH"
+export PATH="/path/to/opencode-sandbox/bin:$PATH"
 ```
 
 Add the `export` line to your shell profile (`.zshrc`, `.bashrc`, etc.) to make it permanent.
