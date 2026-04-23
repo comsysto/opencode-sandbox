@@ -2,7 +2,6 @@ FROM ubuntu:resolute-20260413
 
 ARG USER_ID
 ARG GROUP_ID
-ARG OPENCODE_PASSWORD
 
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 
