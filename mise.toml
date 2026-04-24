@@ -1,0 +1,3 @@
+[tools]
+"github:anomalyco/opencode" = "latest"
+shellcheck = "latest"

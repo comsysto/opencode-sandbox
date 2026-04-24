@@ -29,6 +29,7 @@ RUN curl https://mise.run | sh
 
 RUN mkdir -p /etc/mise/
 COPY mise.toml /etc/mise/config.toml
+RUN chmod ugo+r /etc/mise/config.toml
 RUN mise install --system
 
 COPY opencode-password /opencode-password
