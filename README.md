@@ -16,6 +16,7 @@ opencode-sandbox uses [mise](https://mise.jdx.dev/) to manage software inside th
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)
+- [opencode](https://opencode.ai/) if you want to use opencode via a local terminal client instead of the web UI (optional, but recommended for a seamless experience)
 
 ---
 
@@ -91,16 +92,17 @@ Starts the sandbox for the current project.
 
 Opens `http://127.0.0.1:4096` in your default browser on macOS or Linux.
 
+Use `ocs-web-auth` for authentication or authenticate manually in the browser when prompted:
+
+- **Username:** `opencode`
+- **Password:** contents of `.opencode-sandbox/opencode-password` in your project root
+
+
 ### `ocs-web-auth`
 
 Opens the browser with credentials embedded in the URL (basic auth) on macOS or Linux. Use this on first visit to authenticate your browser session.
 
 > **Note:** After authenticating, the page may show a JavaScript error — this is expected. Your session is authenticated; use `ocs-web` to open a clean working tab.
-
-You can also authenticate manually in the browser when prompted:
-
-- **Username:** `opencode`
-- **Password:** contents of `.opencode-sandbox/opencode-password` in your project root
 
 ### `ocs-terminal`
 
