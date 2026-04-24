@@ -1,2 +1,5 @@
 .idea
 .opencode-sandbox
+.env
+*.env
+*.env.*
