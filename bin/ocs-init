@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Source common configuration
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/../shared"
+# Re-establish SCRIPT_DIR after sourcing shared (shared redefines it for its own location)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+TARGET_DIR="${1:-$(pwd)}"
+TARGET_DIR="$(cd -- "${TARGET_DIR}" && pwd)"
+
+refresh_root_paths "${TARGET_DIR}"
+
+echo "Initializing OpenCode sandbox in: ${TARGET_DIR}"
+echo ""
+
+# Ask the user a yes/no question; default is yes (Enter accepts).
+confirm() {
+  local prompt="${1:?prompt is required}"
+  local answer
+  while true; do
+    printf '%s [Y/n] ' "${prompt}"
+    read -r answer
+    case "${answer}" in
+      [Yy]*|"") return 0 ;;
+      [Nn]*)     return 1 ;;
+      *)         echo "  Please answer y or n." ;;
+    esac
+  done
+}
+
+# --- mise.toml ---
+MISE_FILE="${TARGET_DIR}/mise.toml"
+echo "Step 1/5: Write a minimal mise.toml (opencode only) to ${MISE_FILE}."
+echo "  This file tells mise which version of opencode to install in the container."
+if [[ -f "${MISE_FILE}" ]]; then
+  echo "  Already exists — skipping."
+else
+  if confirm "  Write mise.toml?"; then
+    cp "${SANDBOX_HOME}/init-templates/mise.toml" "${MISE_FILE}"
+    echo "  ✓ Written."
+  else
+    echo "  Skipped."
+  fi
+fi
+echo ""
+
+# --- .opencode-sandbox.env ---
+ENV_FILE="${TARGET_DIR}/.opencode-sandbox.env"
+echo "Step 2/5: Create an empty ${ENV_FILE}."
+echo "  This file is sourced by the container entrypoint; add project-specific"
+echo "  environment variables (e.g. API keys) here without rebuilding the image."
+if [[ -f "${ENV_FILE}" ]]; then
+  echo "  Already exists — skipping."
+else
+  if confirm "  Create .opencode-sandbox.env?"; then
+    touch "${ENV_FILE}"
+    echo "  ✓ Created."
+  else
+    echo "  Skipped."
+  fi
+fi
+echo ""
+
+# --- opencode.jsonc ---
+JSONC_FILE="${TARGET_DIR}/opencode.jsonc"
+JSONC_SOURCE="${SANDBOX_HOME}/init-templates/opencode.jsonc"
+echo "Step 3/5: Copy opencode.jsonc from the sandbox home to ${JSONC_FILE}."
+echo "  This file configures the OpenCode model, provider, and permission policy."
+if [[ -f "${JSONC_FILE}" ]]; then
+  echo "  Already exists — skipping."
+else
+  if confirm "  Copy opencode.jsonc?"; then
+    cp "${JSONC_SOURCE}" "${JSONC_FILE}"
+    echo "  ✓ Copied."
+  else
+    echo "  Skipped."
+  fi
+fi
+echo ""
+
+# --- .gitignore ---
+GITIGNORE_FILE="${TARGET_DIR}/.gitignore"
+GITIGNORE_BLOCK_MARKER="# opencode-sandbox"
+echo "Step 4/5: Add .opencode-sandbox/ and .opencode-sandbox.env to ${GITIGNORE_FILE}."
+echo "  These paths contain secrets and local state that must not be committed."
+if [[ -f "${GITIGNORE_FILE}" ]]; then
+  if grep -qF "${GITIGNORE_BLOCK_MARKER}" "${GITIGNORE_FILE}"; then
+    echo "  Entries already present — skipping."
+  else
+    if confirm "  Append opencode entries to existing .gitignore?"; then
+      printf '\n%s\n.opencode-sandbox/\n.opencode-sandbox.env\n' "${GITIGNORE_BLOCK_MARKER}" >> "${GITIGNORE_FILE}"
+      echo "  ✓ Appended."
+    else
+      echo "  Skipped."
+    fi
+  fi
+else
+  if confirm "  No .gitignore found. Create one with opencode entries?"; then
+    printf '%s\n.opencode-sandbox/\n.opencode-sandbox.env\n' "${GITIGNORE_BLOCK_MARKER}" > "${GITIGNORE_FILE}"
+    echo "  ✓ Created."
+  else
+    echo "  Skipped."
+  fi
+fi
+echo ""
+
+# --- rebuild the container ---
+echo "Step 5/5: Build the Docker container image for this project."
+echo "  This compiles the image using the Dockerfile in the sandbox home and"
+echo "  copies the mise.toml into the container build context."
+if confirm "  Run ocs-rebuild-container?"; then
+  cd "${TARGET_DIR}"
+  "${SCRIPT_DIR}/ocs-rebuild-container"
+else
+  echo "  Skipped. Run ocs-rebuild-container manually when ready."
+fi

@@ -30,11 +30,13 @@ That's it — the `ocs-*` commands are now available globally.
 
 ## Project setup
 
-Once installed, run the following from the **root of your project** (the directory containing `mise.toml`) to set up the sandbox for that project:
+Once installed, run the following from the **root of your project** to initialize and set up the sandbox:
 
 ```bash
-ocs-rebuild-container
+ocs-init
 ```
+
+This will interactively create `mise.toml`, `.opencode-sandbox.env`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
 
 Then start it:
 
@@ -53,7 +55,19 @@ ocs-start-container
 
 ## Commands
 
-`ocs-rebuild-container` must be run from the **root of your project**. All other commands can be run from the project root or any subdirectory inside the same project.
+`ocs-rebuild-container` must be run from the **project root**. All other commands can be run from the project root or any subdirectory inside the same project.
+
+### `ocs-init`
+
+Initializes a target project for use with opencode-sandbox. Run once from the project root.
+
+Interactively creates (each step skipped if already present, default answer is yes):
+
+1. `mise.toml` — minimal config with opencode only
+2. `.opencode-sandbox.env` — empty env file for project-specific variables
+3. `opencode.jsonc` — OpenCode model, provider, and permission config
+4. `.gitignore` entries for `.opencode-sandbox/` and `.opencode-sandbox.env`
+5. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 
@@ -114,11 +128,13 @@ Attaches an OpenCode terminal session to the running container.
 ```
 opencode-sandbox/
 ├── bin/
+│   ├── ocs-init                # Initialize a project for use with opencode-sandbox
 │   ├── ocs-rebuild-container   # Build the Docker image
 │   ├── ocs-start-container     # Start / resume the container
 │   ├── ocs-terminal            # Attach a terminal session
 │   ├── ocs-web                 # Open the web UI
 │   └── ocs-web-auth            # Open the web UI with authentication
+├── init-templates/             # Templates copied into target projects by ocs-init
 ├── shared                      # Shared configuration, utilities, and guards (sourced by bin scripts)
 ├── Dockerfile
 ├── entrypoint.sh

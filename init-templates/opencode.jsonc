@@ -1,0 +1,45 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    // default to ask for everything and configure exceptions
+    "*": "ask",
+    "bash": "allow",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      ".secret*": "deny"
+    },
+    "edit": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      ".secret*": "deny"
+    },
+    "glob": "allow",
+    // always ask for grep as it can indirectly expose information from secret files
+    "grep": {
+      "*": "ask"
+    },
+    "list": "allow",
+    "task": "allow",
+    "skill": "allow",
+    "lsp": "allow",
+    "todoread": "allow",
+    "todowrite": "allow"
+  },
+  // pin the default models
+  "model": "github-copilot/claude-sonnet-4.6",
+  "small_model": "github-copilot/claude-haiku-4.5",
+
+  // only enabled providers that are compliant
+  "enabled_providers": ["github-copilot"],
+
+  // disable the default providers on top, of the white list, you never know :D
+  "disabled_providers": ["opencode"],
+
+  // completely disabled the share feature, we don't want conversations to be uploaded by accident
+  "share": "disabled"
+}
