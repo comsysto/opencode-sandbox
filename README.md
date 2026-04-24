@@ -95,6 +95,8 @@ Opens `http://127.0.0.1:4096` in your default browser on macOS or Linux.
 
 Opens the browser with credentials embedded in the URL (basic auth) on macOS or Linux. Use this on first visit to authenticate your browser session.
 
+> **Note:** After authenticating, the page may show a JavaScript error — this is expected. Your session is authenticated; use `ocs-web` to open a clean working tab.
+
 You can also authenticate manually in the browser when prompted:
 
 - **Username:** `opencode`
