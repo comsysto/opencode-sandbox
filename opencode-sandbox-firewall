@@ -2,22 +2,19 @@
 # One domain per line. A leading dot matches the domain and all its subdomains.
 # Changes require a container rebuild (ocs-rebuild-container).
 
-# ---- mise & tool installation ----
-mise.run
-.github.com
+# ---- github hosting ----
 .githubusercontent.com
 .githubassets.com
+.github.com
 
-# ---- npm ----
+# ---- package managers ----
+.maven.org
 registry.npmjs.org
 .npmjs.org
+mise.run
 
 # ---- AI providers (uncomment the ones you use) ----
-api.anthropic.com
-api.openai.com
-# .openrouter.ai
-# generativelanguage.googleapis.com
-# api.mistral.ai
-# api.groq.com
-# api.cohere.com
 
+.githubcopilot.com
+# api.anthropic.com
+# api.openai.com

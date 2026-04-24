@@ -1,0 +1,19 @@
+# opencode-sandbox firewall whitelist
+# One domain per line.
+# A leading dot matches the domain and all subdomains.
+# Changes require a container rebuild: ocs-rebuild-container
+
+# ---- package managers / tool install ----
+.maven.org
+registry.npmjs.org
+.npmjs.org
+mise.run
+.githubusercontent.com
+.githubassets.com
+
+# ---- AI providers (uncomment what you use) ----
+.github.com
+# api.anthropic.com
+# api.openai.com
+# .openrouter.ai
+

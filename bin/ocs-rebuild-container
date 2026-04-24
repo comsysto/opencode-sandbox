@@ -41,8 +41,9 @@ if [[ -f "${FIREWALL_FILE}" ]]; then
   cp "${FIREWALL_FILE}" "${OPENCODE_SANDBOX_DIR}/sites.whitelist.txt"
   echo "  Loaded $(wc -l < "${FIREWALL_FILE}") entries from ${FIREWALL_FILE}"
 else
-  : > "${OPENCODE_SANDBOX_DIR}/sites.whitelist.txt"
-  echo "  No .opencode-sandbox-firewall found — empty whitelist created (all outbound HTTP/HTTPS will be blocked)"
+  echo "  Missing required firewall file: ${FIREWALL_FILE}" >&2
+  echo "  Create opencode-sandbox-firewall (use ocs-init template) and rebuild." >&2
+  exit 1
 fi
 
 if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
