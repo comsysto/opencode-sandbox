@@ -123,6 +123,31 @@ Attaches an OpenCode terminal session to the running container.
 
 ---
 
+## Network isolation (firewall)
+
+The container runs an internal [Squid](https://www.squid-cache.org/) proxy that restricts outbound HTTP/HTTPS traffic to an explicit whitelist. `iptables` rules inside the container block direct connections on ports 80 and 443 from all processes except Squid itself, so OpenCode (and any tools it spawns) must go through the proxy.
+
+All outbound traffic is routed via the proxy automatically through the standard `http_proxy` / `https_proxy` environment variables set by the container entrypoint.
+
+### Configuring the whitelist
+
+Create `.opencode-sandbox-firewall` in your project root (one domain per line):
+
+```
+api.anthropic.com
+api.openai.com
+github.com
+registry.npmjs.org
+```
+
+- Subdomains are matched automatically (e.g. `github.com` also allows `api.github.com`)
+- The file is copied into the Docker build context by `ocs-rebuild-container` — a rebuild is required after changes
+- If the file does not exist, an empty whitelist is used and **all outbound HTTP/HTTPS is blocked**
+
+> **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
+
+---
+
 ## Environment variables
 
 Project-specific environment variables (e.g. API keys) can be passed to the container via `.opencode-sandbox.env` in the project root:
@@ -166,6 +191,8 @@ Each project gets its own isolated container named after the project directory (
 ├── container-name        # Locked container name for this project
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
+├── squid.conf            # Copied from opencode-sandbox repo at build time
+├── sites.whitelist.txt   # Copied from .opencode-sandbox-firewall at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```

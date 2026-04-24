@@ -35,7 +35,7 @@ if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   docker start -ai "${SANDBOX_NAME}"
 else
   echo "Creating container ${SANDBOX_NAME}..."
-  docker run --init -it --name "${SANDBOX_NAME}" -p "${LOCALHOST}:${PORT}:4096" -v "${ROOT_DIR}:/workspace" -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" "${SANDBOX_NAME}"
+  docker run --init -it --cap-add NET_ADMIN --name "${SANDBOX_NAME}" -p "${LOCALHOST}:${PORT}:4096" -v "${ROOT_DIR}:/workspace" -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" "${SANDBOX_NAME}"
 fi
 
 

@@ -8,7 +8,9 @@ ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install curl git ca-certificates build-essential \
+    && apt-get -y --no-install-recommends install \
+       curl git ca-certificates build-essential \
+       squid gosu iptables \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
@@ -32,11 +34,16 @@ COPY mise.toml /etc/mise/config.toml
 RUN chmod ugo+r /etc/mise/config.toml
 RUN mise install --system
 
+# Squid proxy configuration
+COPY squid.conf /etc/squid/squid.conf
+COPY sites.whitelist.txt /etc/squid/sites.whitelist.txt
+
 COPY opencode-password /opencode-password
 COPY entrypoint.sh /entrypoint.sh
-RUN chown -R ${USER_ID}:${GROUP_ID} /entrypoint.sh /opencode-password
+RUN chown ${USER_ID}:${GROUP_ID} /opencode-password
 RUN chmod +x /entrypoint.sh
 
-USER ${USER_ID}
+# Run as root so entrypoint can start squid and configure iptables,
+# then switches to the dev user via gosu before starting opencode.
 WORKDIR /workspace
 ENTRYPOINT ["/entrypoint.sh"]

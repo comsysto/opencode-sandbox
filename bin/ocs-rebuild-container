@@ -33,6 +33,18 @@ cp "${MISE_CONFIG_ROOT_FILE}" "${MISE_CONFIG_SANDBOX_FILE}"
 echo "Copying entrypoint script ..."
 cp "${SANDBOX_HOME}/entrypoint.sh" "${OPENCODE_SANDBOX_DIR}/entrypoint.sh"
 
+echo "Copying squid configuration ..."
+cp "${SANDBOX_HOME}/squid.conf" "${OPENCODE_SANDBOX_DIR}/squid.conf"
+
+echo "Copying firewall whitelist ..."
+if [[ -f "${FIREWALL_FILE}" ]]; then
+  cp "${FIREWALL_FILE}" "${OPENCODE_SANDBOX_DIR}/sites.whitelist.txt"
+  echo "  Loaded $(wc -l < "${FIREWALL_FILE}") entries from ${FIREWALL_FILE}"
+else
+  : > "${OPENCODE_SANDBOX_DIR}/sites.whitelist.txt"
+  echo "  No .opencode-sandbox-firewall found — empty whitelist created (all outbound HTTP/HTTPS will be blocked)"
+fi
+
 if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   echo "Removing existing container ${SANDBOX_NAME}..."
   docker rm -f "${SANDBOX_NAME}" >/dev/null

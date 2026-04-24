@@ -1,0 +1,23 @@
+# opencode-sandbox firewall whitelist
+# One domain per line. A leading dot matches the domain and all its subdomains.
+# Changes require a container rebuild (ocs-rebuild-container).
+
+# ---- mise & tool installation ----
+mise.run
+.github.com
+.githubusercontent.com
+.githubassets.com
+
+# ---- npm ----
+registry.npmjs.org
+.npmjs.org
+
+# ---- AI providers (uncomment the ones you use) ----
+api.anthropic.com
+api.openai.com
+# .openrouter.ai
+# generativelanguage.googleapis.com
+# api.mistral.ai
+# api.groq.com
+# api.cohere.com
+
