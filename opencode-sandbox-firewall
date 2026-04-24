@@ -1,20 +1,32 @@
-# opencode-sandbox firewall whitelist
-# One domain per line. A leading dot matches the domain and all its subdomains.
-# Changes require a container rebuild (ocs-rebuild-container).
+# opencode-sandbox firewall configuration
+# Changes require a container rebuild: ocs-rebuild-container
 
-# ---- github hosting ----
+# [http-domain-whitelist] — outbound HTTP/HTTPS domains allowed through the Squid proxy.
+# A leading dot matches the domain and all subdomains.
+
+[http-domain-whitelist]
 .githubusercontent.com
 .githubassets.com
 .github.com
+.githubcopilot.com
 
-# ---- package managers ----
-.maven.org
-registry.npmjs.org
-.npmjs.org
 mise.run
 
-# ---- AI providers (uncomment the ones you use) ----
+registry.npmjs.org
+.npmjs.org
 
-.githubcopilot.com
+.maven.org
+
 # api.anthropic.com
 # api.openai.com
+# .openrouter.ai
+
+# [host-ports] — TCP ports on the host machine the container may connect to directly
+# (bypasses the HTTP proxy — use this for databases and other non-HTTP services).
+
+[host-ports]
+1234
+# 5432
+# 3306
+# 6379
+# 27017

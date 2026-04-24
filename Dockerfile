@@ -10,7 +10,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update \
     && apt-get -y --no-install-recommends install \
        curl git ca-certificates build-essential \
-       squid gosu iptables \
+       squid gosu iptables iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
@@ -34,9 +34,12 @@ COPY mise.toml /etc/mise/config.toml
 RUN chmod ugo+r /etc/mise/config.toml
 RUN mise install --system
 
-# Squid proxy configuration
+# Squid proxy configuration and domain whitelist
+# squid-whitelist.txt is extracted from opencode-sandbox-firewall by ocs-rebuild-container
 COPY squid.conf /etc/squid/squid.conf
-COPY opencode-sandbox-firewall /etc/squid/opencode-sandbox-firewall
+COPY squid-whitelist.txt /etc/squid/squid-whitelist.txt
+# Host TCP ports allowed through the firewall (one port number per line)
+COPY host-ports.txt /etc/host-ports.txt
 
 COPY opencode-password /opencode-password
 COPY entrypoint.sh /entrypoint.sh

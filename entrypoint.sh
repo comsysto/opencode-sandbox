@@ -19,19 +19,31 @@ echo ">> squid is ready"
 # - host TCP ports listed in /etc/host-ports.txt
 # ---------------------------------------------------------------------------
 echo ">> configuring firewall"
-iptables -P OUTPUT DROP
+# Flush existing OUTPUT rules to avoid duplicates on container restart
+iptables  -F OUTPUT
+ip6tables -F OUTPUT
+
+# Default-deny outbound for both IPv4 and IPv6
+iptables  -P OUTPUT DROP
+ip6tables -P OUTPUT DROP
 
 # Allow loopback (needed for proxy connections to squid on 127.0.0.1:3128)
-iptables -A OUTPUT -o lo -j ACCEPT
+iptables  -A OUTPUT -o lo -j ACCEPT
+ip6tables -A OUTPUT -o lo -j ACCEPT
 # Allow packets that belong to already established connections
-iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables  -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Allow squid process DNS lookups
-iptables -A OUTPUT -m owner --uid-owner proxy -p udp --dport 53 -j ACCEPT
-iptables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 53 -j ACCEPT
+iptables  -A OUTPUT -m owner --uid-owner proxy -p udp --dport 53 -j ACCEPT
+iptables  -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 53 -j ACCEPT
+ip6tables -A OUTPUT -m owner --uid-owner proxy -p udp --dport 53 -j ACCEPT
+ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 53 -j ACCEPT
 # Allow squid process outbound HTTP / HTTPS
-iptables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 80 -j ACCEPT
-iptables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 443 -j ACCEPT
+iptables  -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 80  -j ACCEPT
+iptables  -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 443 -j ACCEPT
+ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 80  -j ACCEPT
+ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 443 -j ACCEPT
 
 # Allow host TCP ports (databases etc.) — one port number per line in /etc/host-ports.txt
 HOST_GW=$(ip route show default | awk '/default/ { print $3; exit }')
