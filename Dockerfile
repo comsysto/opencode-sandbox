@@ -36,7 +36,7 @@ RUN mise install --system
 
 # Squid proxy configuration
 COPY squid.conf /etc/squid/squid.conf
-COPY sites.whitelist.txt /etc/squid/sites.whitelist.txt
+COPY opencode-sandbox-firewall /etc/squid/opencode-sandbox-firewall
 
 COPY opencode-password /opencode-password
 COPY entrypoint.sh /entrypoint.sh

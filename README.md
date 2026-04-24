@@ -193,7 +193,7 @@ Each project gets its own isolated container named after the project directory (
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
 ├── squid.conf            # Copied from opencode-sandbox repo at build time
-├── sites.whitelist.txt   # Copied from opencode-sandbox-firewall at build time
+├── opencode-sandbox-firewall # Copied from opencode-sandbox-firewall at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```

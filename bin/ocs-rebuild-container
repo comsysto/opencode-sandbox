@@ -38,7 +38,7 @@ cp "${SANDBOX_HOME}/squid.conf" "${OPENCODE_SANDBOX_DIR}/squid.conf"
 
 echo "Copying firewall whitelist ..."
 if [[ -f "${FIREWALL_FILE}" ]]; then
-  cp "${FIREWALL_FILE}" "${OPENCODE_SANDBOX_DIR}/sites.whitelist.txt"
+  cp "${FIREWALL_FILE}" "${OPENCODE_SANDBOX_DIR}/opencode-sandbox-firewall"
   echo "  Loaded $(wc -l < "${FIREWALL_FILE}") entries from ${FIREWALL_FILE}"
 else
   echo "  Missing required firewall file: ${FIREWALL_FILE}" >&2
