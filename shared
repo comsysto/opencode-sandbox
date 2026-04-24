@@ -67,6 +67,16 @@ print_sandbox_dir() {
 
 refresh_root_paths "${ROOT_DIR}"
 
+# Container runtime: prefer docker, fall back to podman
+if command -v docker >/dev/null 2>&1; then
+  CONTAINER_RUNTIME=docker
+elif command -v podman >/dev/null 2>&1; then
+  CONTAINER_RUNTIME=podman
+else
+  echo "Neither docker nor podman found in PATH." >&2
+  exit 1
+fi
+
 # Network configuration
 PORT=4096
 LOCALHOST=127.0.0.1

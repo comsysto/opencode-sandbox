@@ -12,7 +12,7 @@ print_sandbox_dir
 cleanup() {
   echo
   echo "Stopping Container ${SANDBOX_NAME}..."
-  docker stop "${SANDBOX_NAME}" >/dev/null 2>&1 || true
+  "${CONTAINER_RUNTIME}" stop "${SANDBOX_NAME}" >/dev/null 2>&1 || true
 }
 
 trap cleanup INT TERM
@@ -24,18 +24,26 @@ if [[ ! -f "${OPENCODE_PASSWORD_FILE}" || ! -f "${MISE_CONFIG_SANDBOX_FILE}" ]];
   exit 1
 fi
 
-if ! docker image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
-  echo "Docker image ${SANDBOX_NAME} is not available locally."
+if ! "${CONTAINER_RUNTIME}" image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+  echo "Container image ${SANDBOX_NAME} is not available locally."
   echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container first."
   exit 1
 fi
 
-if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+if "${CONTAINER_RUNTIME}" container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   echo "Resuming existing container ${SANDBOX_NAME}..."
-  docker start -ai "${SANDBOX_NAME}"
+  "${CONTAINER_RUNTIME}" start -ai "${SANDBOX_NAME}"
 else
   echo "Creating container ${SANDBOX_NAME}..."
-  docker run --init -it --cap-add NET_ADMIN --name "${SANDBOX_NAME}" -p "${LOCALHOST}:${PORT}:4096" -v "${ROOT_DIR}:/workspace" -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" "${SANDBOX_NAME}"
+  "${CONTAINER_RUNTIME}" run --init -it --cap-add NET_ADMIN \
+    --add-host=host.lima.internal:host-gateway \
+    --add-host=host.docker.internal:host-gateway \
+    --add-host=host.containers.internal:host-gateway \
+    --name "${SANDBOX_NAME}" \
+    -p "${LOCALHOST}:${PORT}:4096" \
+    -v "${ROOT_DIR}:/workspace" \
+    -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
+    "${SANDBOX_NAME}"
 fi
 
 

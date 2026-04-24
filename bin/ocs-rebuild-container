@@ -36,35 +36,53 @@ cp "${SANDBOX_HOME}/entrypoint.sh" "${OPENCODE_SANDBOX_DIR}/entrypoint.sh"
 echo "Copying squid configuration ..."
 cp "${SANDBOX_HOME}/squid.conf" "${OPENCODE_SANDBOX_DIR}/squid.conf"
 
-echo "Copying firewall whitelist ..."
+echo "Processing firewall configuration ..."
 if [[ -f "${FIREWALL_FILE}" ]]; then
-  cp "${FIREWALL_FILE}" "${OPENCODE_SANDBOX_DIR}/opencode-sandbox-firewall"
-  echo "  Loaded $(wc -l < "${FIREWALL_FILE}") entries from ${FIREWALL_FILE}"
+  SQUID_WHITELIST="${OPENCODE_SANDBOX_DIR}/squid-whitelist.txt"
+  HOST_PORTS="${OPENCODE_SANDBOX_DIR}/host-ports.txt"
+  true > "${SQUID_WHITELIST}"
+  true > "${HOST_PORTS}"
+  mode=""
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    # Skip comment lines and blank/whitespace-only lines
+    [[ "${line}" == "#"* || -z "${line// }" ]] && continue
+    # Section headers switch mode
+    if   [[ "${line}" == "[http-domain-whitelist]" ]]; then mode="whitelist"; continue
+    elif [[ "${line}" == "[host-ports]"            ]]; then mode="ports";     continue
+    elif [[ "${line}" == "["*          ]]; then mode="";          continue
+    fi
+    # Append value to the appropriate output file
+    if   [[ "${mode}" == "whitelist" ]]; then echo "${line}" >> "${SQUID_WHITELIST}"
+    elif [[ "${mode}" == "ports"     ]]; then echo "${line}" >> "${HOST_PORTS}"
+    fi
+  done < "${FIREWALL_FILE}"
+  echo "  Extracted $(wc -l < "${SQUID_WHITELIST}") whitelisted domain(s) into squid-whitelist.txt"
+  echo "  Extracted $(wc -l < "${HOST_PORTS}") host TCP port(s) into host-ports.txt"
 else
   echo "  Missing required firewall file: ${FIREWALL_FILE}" >&2
   echo "  Create opencode-sandbox-firewall (use ocs-init template) and rebuild." >&2
   exit 1
 fi
 
-if docker container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
+if "${CONTAINER_RUNTIME}" container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
   echo "Removing existing container ${SANDBOX_NAME}..."
-  docker rm -f "${SANDBOX_NAME}" >/dev/null
+  "${CONTAINER_RUNTIME}" rm -f "${SANDBOX_NAME}" >/dev/null
 fi
 
 
 echo "Building Container Image '${SANDBOX_NAME}' (USER_ID=${USER_ID} GROUP_ID=${GROUP_ID})..."
-DOCKER_BUILD_LOG="${OPENCODE_SANDBOX_DIR}/docker-build.log"
+BUILD_LOG="${OPENCODE_SANDBOX_DIR}/docker-build.log"
 
-if docker build \
+if "${CONTAINER_RUNTIME}" build \
   --build-arg "USER_ID=${USER_ID}" \
   --build-arg "GROUP_ID=${GROUP_ID}" \
   -t "${SANDBOX_NAME}" \
   -f "${SANDBOX_HOME}/Dockerfile" \
-  "${OPENCODE_SANDBOX_DIR}" > "${DOCKER_BUILD_LOG}" 2>&1; then
-  echo "✓ Docker image '${SANDBOX_NAME}' built successfully"
+  "${OPENCODE_SANDBOX_DIR}" > "${BUILD_LOG}" 2>&1; then
+  echo "✓ Container image '${SANDBOX_NAME}' built successfully"
 else
-  echo "✗ Docker build failed. Output:"
-  cat "${DOCKER_BUILD_LOG}"
+  echo "✗ Container build failed. Output:"
+  cat "${BUILD_LOG}"
   exit 1
 fi
 
