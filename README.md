@@ -65,7 +65,7 @@ Interactively creates (each step skipped if already present, default answer is y
 
 1. `mise.toml` — minimal config with opencode only
 2. `opencode-sandbox.env` — empty env file for project-specific variables
-3. `opencode-sandbox-firewall` — TOML config controlling outbound HTTP/HTTPS whitelist and host TCP ports
+3. `opencode-sandbox-firewall` — section-based config controlling outbound HTTP/HTTPS whitelist and host TCP ports
 4. `opencode.jsonc` — OpenCode model, provider, and permission config
 5. `.gitignore` entries for `.opencode-sandbox/`, `opencode-sandbox.env`, and `opencode-sandbox-firewall`
 6. Builds the Docker container image
@@ -206,7 +206,7 @@ Each project gets its own isolated container named after the project directory (
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
 ├── squid.conf            # Copied from opencode-sandbox repo at build time
-├── opencode-sandbox-firewall # Copied from project root at build time (TOML)
+├── opencode-sandbox-firewall # Copied from project root at build time (section-based format)
 ├── squid-whitelist.txt       # Extracted from [whitelist] section at build time
 ├── host-ports.txt            # Extracted from [ports] section at build time
 ├── docker-build.log      # Docker build output (created during build)
