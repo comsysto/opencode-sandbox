@@ -95,6 +95,11 @@ Opens `http://127.0.0.1:4096` in your default browser on macOS or Linux.
 
 Opens the browser with credentials embedded in the URL (basic auth) on macOS or Linux. Use this on first visit to authenticate your browser session.
 
+You can also authenticate manually in the browser when prompted:
+
+- **Username:** `opencode`
+- **Password:** contents of `.opencode-sandbox/opencode-password` in your project root
+
 ### `ocs-terminal`
 
 Attaches an OpenCode terminal session to the running container.
