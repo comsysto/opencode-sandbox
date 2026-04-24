@@ -3,7 +3,7 @@
   "permission": {
     // default to ask for everything and configure exceptions
     "*": "ask",
-    "bash": "allow",
+    "bash": "ask",
     "read": {
       "*": "allow",
       "*.env": "deny",
