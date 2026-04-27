@@ -17,6 +17,7 @@ refresh_root_paths() {
   MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
   CONTAINER_NAME_FILE="${OPENCODE_SANDBOX_DIR}/container-name"
   OPENCODE_STATE_DIR="${OPENCODE_SANDBOX_DIR}/opencode-state"
+  FIREWALL_FILE="${ROOT_DIR}/opencode-sandbox-firewall"
 
   # Container name: read from file if present, otherwise derive from project directory name
   if [[ -f "${CONTAINER_NAME_FILE}" ]]; then
@@ -65,6 +66,16 @@ print_sandbox_dir() {
 }
 
 refresh_root_paths "${ROOT_DIR}"
+
+# Container runtime: prefer docker, fall back to podman
+if command -v docker >/dev/null 2>&1; then
+  CONTAINER_RUNTIME=docker
+elif command -v podman >/dev/null 2>&1; then
+  CONTAINER_RUNTIME=podman
+else
+  echo "Neither docker nor podman found in PATH." >&2
+  exit 1
+fi
 
 # Network configuration
 PORT=4096

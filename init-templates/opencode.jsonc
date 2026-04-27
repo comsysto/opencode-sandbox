@@ -9,14 +9,20 @@
       "*.env": "deny",
       "*.env.*": "deny",
       "*.env.example": "allow",
-      ".secret*": "deny"
+      ".secret*": "deny",
+      "opencode.jsonc": "deny",
+      "opencode-sandbox-firewall": "deny",
+      "opencode-sandbox.env": "deny"
     },
     "edit": {
       "*": "allow",
       "*.env": "deny",
       "*.env.*": "deny",
       "*.env.example": "allow",
-      ".secret*": "deny"
+      ".secret*": "deny",
+      "opencode.jsonc": "deny",
+      "opencode-sandbox-firewall": "deny",
+      "opencode-sandbox.env": "deny"
     },
     "glob": "allow",
     // always ask for grep as it can indirectly expose information from secret files

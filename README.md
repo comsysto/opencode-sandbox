@@ -43,7 +43,7 @@ Once installed, run the following from the **root of your project** to initializ
 ocs-init
 ```
 
-This will interactively create `mise.toml`, `.opencode-sandbox.env`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
+This will interactively create `mise.toml`, `opencode-sandbox.env`, `opencode-sandbox-firewall`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
 
 Then start it:
 
@@ -64,10 +64,11 @@ Initializes a target project for use with opencode-sandbox. Run once from the pr
 Interactively creates (each step skipped if already present, default answer is yes):
 
 1. `mise.toml` — minimal config with opencode only
-2. `.opencode-sandbox.env` — empty env file for project-specific variables
-3. `opencode.jsonc` — OpenCode model, provider, and permission config
-4. `.gitignore` entries for `.opencode-sandbox/` and `.opencode-sandbox.env`
-5. Builds the Docker container image
+2. `opencode-sandbox.env` — empty env file for project-specific variables
+3. `opencode-sandbox-firewall` — section-based config controlling outbound HTTP/HTTPS whitelist and host TCP ports
+4. `opencode.jsonc` — OpenCode model, provider, and permission config
+5. `.gitignore` entries for `.opencode-sandbox/`, `opencode-sandbox.env`, and `opencode-sandbox-firewall`
+6. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 
@@ -123,9 +124,47 @@ Attaches an OpenCode terminal session to the running container.
 
 ---
 
+## Network isolation (firewall)
+
+The container runs an internal [Squid](https://www.squid-cache.org/) proxy that restricts outbound HTTP/HTTPS traffic to an explicit whitelist. `iptables` rules inside the container use a default-deny outbound policy and allow only loopback traffic, established connections, and Squid's own DNS + HTTP/HTTPS egress. OpenCode (and any tools it spawns) must go through the proxy.
+
+All outbound traffic is routed via the proxy automatically through the standard `http_proxy` / `https_proxy` environment variables set by the container entrypoint.
+
+### Configuring the firewall
+
+The `opencode-sandbox-firewall` file in your project root uses a simple section-based format — a `[section]` header followed by one value per line. Lines starting with `#` are comments.
+
+```
+[http-domain-whitelist]
+.github.com
+api.anthropic.com
+registry.npmjs.org
+
+[host-ports]
+5432
+6379
+```
+
+**`[http-domain-whitelist]`** — domains allowed through the Squid HTTP/HTTPS proxy:
+- A leading dot matches the domain **and** all its subdomains (e.g. `.github.com` allows `github.com`, `api.github.com`, `raw.githubusercontent.com`, etc.)
+- Without a leading dot, only the exact domain is matched (e.g. `api.anthropic.com` does **not** allow `bedrock.anthropic.com`)
+- When in doubt, use the leading-dot form to avoid hard-to-debug connection failures
+- Used for AI providers, package registries, and any other HTTP/HTTPS endpoints
+
+**`[host-ports]`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
+- Use this for databases and other non-HTTP services running on the host or in another Docker container
+- The host is reachable via `docker.host` (injected automatically at container start)
+- Pass the connection string via `opencode-sandbox.env` (e.g. `DATABASE_URL=postgres://user:pass@172.17.0.1:5432/mydb`)
+
+The file is copied into the Docker build context by `ocs-rebuild-container` — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
+
+> **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
+
+---
+
 ## Environment variables
 
-Project-specific environment variables (e.g. API keys) can be passed to the container via `.opencode-sandbox.env` in the project root:
+Project-specific environment variables (e.g. API keys) can be passed to the container via `opencode-sandbox.env` in the project root:
 
 ```
 ANTHROPIC_API_KEY=sk-...
@@ -135,7 +174,7 @@ GITHUB_TOKEN=ghp_...
 - Plain `KEY=VALUE` format, one per line — no `export` needed
 - The file is sourced by the container entrypoint before OpenCode starts, so all variables are automatically exported
 - Takes effect without rebuilding the container — just restart with `ocs-start-container`
-- Add `.opencode-sandbox.env` to `.gitignore` if it contains secrets (`ocs-init` does this automatically)
+- Add `opencode-sandbox.env` to `.gitignore` if it contains secrets (`ocs-init` does this automatically)
 
 ---
 
@@ -166,6 +205,10 @@ Each project gets its own isolated container named after the project directory (
 ├── container-name        # Locked container name for this project
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
+├── squid.conf            # Copied from opencode-sandbox repo at build time
+├── opencode-sandbox-firewall # Copied from project root at build time (section-based format)
+├── squid-whitelist.txt       # Extracted from [http-domain-whitelist] section at build time
+├── host-ports.txt            # Extracted from [host-ports] section at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```
