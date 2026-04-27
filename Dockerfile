@@ -19,7 +19,20 @@ RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
 
 RUN if ! getent passwd ${USER_ID} > /dev/null 2>&1; then \
     useradd -m -l -u ${USER_ID} -g ${GROUP_ID} --shell /bin/bash dev \
-;fi
+RUN existing_group=$(getent group ${GROUP_ID} | cut -d: -f1); \
+    if [ -z "${existing_group}" ]; then \
+      groupadd -g ${GROUP_ID} dev; \
+    elif [ "${existing_group}" != "dev" ]; then \
+      groupmod -n dev "${existing_group}"; \
+    fi
+
+RUN existing_user=$(getent passwd ${USER_ID} | cut -d: -f1); \
+    if [ -z "${existing_user}" ]; then \
+      useradd -m -l -u ${USER_ID} -g ${GROUP_ID} --shell /bin/bash dev; \
+    elif [ "${existing_user}" != "dev" ]; then \
+      usermod -l dev -d /home/dev -m "${existing_user}"; \
+    fi
+
 
 RUN mkdir -p /workspace
 # precreate directory where we mount the volume for opencode and setup permissions for the dev user
