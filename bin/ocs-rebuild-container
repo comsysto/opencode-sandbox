@@ -64,10 +64,6 @@ else
   exit 1
 fi
 
-if "${CONTAINER_RUNTIME}" container inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
-  echo "Removing existing container ${SANDBOX_NAME}..."
-  "${CONTAINER_RUNTIME}" rm -f "${SANDBOX_NAME}" >/dev/null
-fi
 
 
 echo "Building Container Image '${SANDBOX_NAME}' (USER_ID=${USER_ID} GROUP_ID=${GROUP_ID})..."
