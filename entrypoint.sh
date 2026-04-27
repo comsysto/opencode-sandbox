@@ -50,7 +50,7 @@ ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 443 -j ACCEPT
 # Allow host TCP ports (databases etc.) — one port number per line in /etc/host-ports.txt
 HOST_IP=$(getent hosts docker.host 2>/dev/null | awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print $1; exit}' || true)
 
-while IFS= read -r port || [[ -n "${port}" ]]; do
+while IFS= read -r port || [[ -n "${port:-}" ]]; do
   iptables -A OUTPUT -d docker.host -p tcp --dport "${port}" -j ACCEPT
 done < /etc/host-ports.txt
 
@@ -62,12 +62,12 @@ echo ">> sandbox configuration"
 echo "   host: docker.host -> ${HOST_IP:-<none>}"
 echo ""
 echo "   host ports:"
-while IFS= read -r port || [[ -n "${port}" ]]; do
+while IFS= read -r port || [[ -n "${port:-}" ]]; do
   echo "     docker.host:${port}"
 done < /etc/host-ports.txt
 echo ""
 echo "   https domains whitelisted:"
-while IFS= read -r domain || [[ -n "${domain}" ]]; do
+while IFS= read -r domain || [[ -n "${domain:-}" ]]; do
   echo "     ${domain}"
 done < /etc/squid/squid-whitelist.txt
 echo ""

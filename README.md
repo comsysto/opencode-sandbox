@@ -156,7 +156,7 @@ registry.npmjs.org
 - The host is reachable via `docker.host` (injected automatically at container start)
 - Pass the connection string via `opencode-sandbox.env` (e.g. `DATABASE_URL=postgres://user:pass@172.17.0.1:5432/mydb`)
 
-The file is copied into the Docker build context by `ocs-rebuild-container` — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
+`ocs-rebuild-container` reads this file to generate the derived `squid-whitelist.txt` and `host-ports.txt` files that are copied into the Docker build context — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
 
 > **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
 
