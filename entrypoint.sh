@@ -22,6 +22,8 @@ echo ">> configuring firewall"
 # Flush existing OUTPUT rules to avoid duplicates on container restart
 iptables  -F OUTPUT
 ip6tables -F OUTPUT
+# Note: ip6tables is run unconditionally. On kernels without IPv6 support this will
+# fail and abort startup. We accept this risk to keep the setup simple.
 
 # Default-deny outbound for both IPv4 and IPv6
 iptables  -P OUTPUT DROP
@@ -46,7 +48,7 @@ ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 80  -j ACCEPT
 ip6tables -A OUTPUT -m owner --uid-owner proxy -p tcp --dport 443 -j ACCEPT
 
 # Allow host TCP ports (databases etc.) — one port number per line in /etc/host-ports.txt
-HOST_IP=$(getent hosts docker.host 2>/dev/null | awk '{print $1; exit}' || true)
+HOST_IP=$(getent hosts docker.host 2>/dev/null | awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print $1; exit}' || true)
 
 while IFS= read -r port || [[ -n "${port}" ]]; do
   iptables -A OUTPUT -d docker.host -p tcp --dport "${port}" -j ACCEPT

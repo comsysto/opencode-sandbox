@@ -153,7 +153,7 @@ registry.npmjs.org
 
 **`[host-ports]`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
 - Use this for databases and other non-HTTP services running on the host or in another Docker container
-- The host is reachable at the Docker bridge gateway IP (auto-detected at container start), or via `host.docker.internal` on Docker Desktop
+- The host is reachable via `docker.host` (injected automatically at container start)
 - Pass the connection string via `opencode-sandbox.env` (e.g. `DATABASE_URL=postgres://user:pass@172.17.0.1:5432/mydb`)
 
 The file is copied into the Docker build context by `ocs-rebuild-container` — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
@@ -207,8 +207,8 @@ Each project gets its own isolated container named after the project directory (
 ├── mise.toml             # Copied from project root at build time
 ├── squid.conf            # Copied from opencode-sandbox repo at build time
 ├── opencode-sandbox-firewall # Copied from project root at build time (section-based format)
-├── squid-whitelist.txt       # Extracted from [whitelist] section at build time
-├── host-ports.txt            # Extracted from [ports] section at build time
+├── squid-whitelist.txt       # Extracted from [http-domain-whitelist] section at build time
+├── host-ports.txt            # Extracted from [host-ports] section at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```
