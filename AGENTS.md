@@ -36,3 +36,9 @@ The supported subset is intentionally narrow:
 - Line comments (`#`) and blank lines
 
 Anything outside this subset — anchors, multi-line strings, nested structures, typed values — is silently ignored by the parser in `ocs-rebuild-container`. Do not add configuration that relies on YAML features beyond the above. If richer configuration is ever needed, switch to a proper YAML parser (`yq`) rather than extending the bash parser.
+
+### bash 3.2 compatibility (macOS)
+
+macOS ships bash 3.2 as the system shell. All scripts must be compatible with it:
+- Non-greedy regex quantifiers (`*?`, `+?`) are **not supported** — use character classes instead (e.g. `[^:]+` rather than `.*?[^:]`)
+- Test regex changes on both Linux (bash 5) and macOS (bash 3.2) before committing
