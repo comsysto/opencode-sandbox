@@ -55,7 +55,7 @@ fi
 ENV_STATIC_FILE="${OPENCODE_SANDBOX_DIR}/env.txt"
 if [[ -f "${ENV_STATIC_FILE}" ]]; then
   while IFS= read -r assignment || [[ -n "${assignment}" ]]; do
-    [[ -n "${assignment}" ]] && env_flags+=(--env "${assignment}") && env_log+=("    ${assignment%%=*} (static)")
+    [[ -n "${assignment}" ]] && env_flags+=(--env "${assignment}") && env_log+=("    ${assignment} (static)")
   done < "${ENV_STATIC_FILE}"
 fi
 
