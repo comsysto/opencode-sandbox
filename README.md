@@ -187,7 +187,7 @@ env:
 
 Environment variables are forwarded into the container in two ways, both configured in `opencode-sandbox-config.yaml`.
 
-### Static variables — `[env]` section
+### Static variables — `env` key
 
 For non-secret project context that is safe to commit:
 
@@ -199,7 +199,7 @@ env:
 
 Values are literal `KEY=VALUE` pairs passed directly to the container. Requires a rebuild after changes.
 
-### Secret variables — `[env-passthrough]` section
+### Secret variables — `env-passthrough` key
 
 For secrets and credentials that must not be stored in files:
 
@@ -250,10 +250,10 @@ Each project gets its own isolated container named after the project directory (
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
 ├── squid.conf            # Copied from opencode-sandbox repo at build time
-├── squid-whitelist.txt       # Extracted from [http-domain-whitelist] section at build time
-├── host-ports.txt            # Extracted from [host-ports] section at build time
-├── env-passthrough.txt       # Extracted from [env-passthrough] section at build time
-├── env.txt                   # Extracted from [env] section at build time
+├── squid-whitelist.txt       # Extracted from http-domain-whitelist at build time
+├── host-ports.txt            # Extracted from host-ports at build time
+├── env-passthrough.txt       # Extracted from env-passthrough at build time
+├── env.txt                   # Extracted from env at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```
