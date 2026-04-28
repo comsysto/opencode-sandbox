@@ -9,6 +9,14 @@ source "${SCRIPT_DIR}/../shared"
 use_sandbox_root
 print_sandbox_dir
 
+# Source pre-start hook if present (runs on host, may export env vars)
+HOOK_PRE_START="${ROOT_DIR}/opencode-sandbox-pre-start-container.sh"
+if [[ -f "${HOOK_PRE_START}" ]]; then
+  echo ">> sourcing opencode-sandbox-pre-start-container.sh"
+  # shellcheck source=/dev/null
+  source "${HOOK_PRE_START}"
+fi
+
 cleanup() {
   echo
   echo "Stopping Container ${SANDBOX_NAME}..."

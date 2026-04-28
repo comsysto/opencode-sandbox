@@ -11,7 +11,8 @@
       "*.env.example": "allow",
       ".secret*": "deny",
       "opencode.jsonc": "deny",
-      "opencode-sandbox-config.yaml": "deny"
+      "opencode-sandbox-config.yaml": "deny",
+      "opencode-sandbox-pre-start-container.sh": "deny"
     },
     "edit": {
       "*": "allow",
@@ -20,7 +21,8 @@
       "*.env.example": "allow",
       ".secret*": "deny",
       "opencode.jsonc": "deny",
-      "opencode-sandbox-config.yaml": "deny"
+      "opencode-sandbox-config.yaml": "deny",
+      "opencode-sandbox-pre-start-container.sh": "deny"
     },
     "glob": "allow",
     // always ask for grep as it can indirectly expose information from secret files

@@ -43,7 +43,7 @@ Once installed, run the following from the **root of your project** to initializ
 ocs-init
 ```
 
-This will interactively create `mise.toml`, `opencode-sandbox-config.yaml`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
+This will interactively create `mise.toml`, `opencode-sandbox-config.yaml`, `opencode.jsonc`, `opencode-sandbox-pre-start-container.sh`, update `.gitignore`, and build the container — confirming each step before acting.
 
 Then start it:
 
@@ -66,8 +66,9 @@ Interactively creates (each step skipped if already present, default answer is y
 1. `mise.toml` — minimal config with opencode only
 2. `opencode-sandbox-config.yaml` — YAML config controlling outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
 3. `opencode.jsonc` — OpenCode model, provider, and permission config
-4. `.gitignore` entries for `.opencode-sandbox/`
-5. Builds the Docker container image
+4. `opencode-sandbox-pre-start-container.sh` — empty hook script sourced before the container starts (see [Hooks](#hooks))
+5. `.gitignore` entries for `.opencode-sandbox/`
+6. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 
@@ -81,14 +82,13 @@ Prepares build artifacts and rebuilds the Docker image. Run this whenever you wa
 
 ### `ocs-start-container`
 
-Starts the sandbox for the current project.
+Starts the sandbox for the current project. Each invocation creates a fresh container (`--rm` ensures it is removed on stop); session state is preserved between runs because the workspace and OpenCode state are mounted volumes.
 
-- Resumes the existing container if it was previously stopped (state is preserved)
-- Creates a fresh container on first run
+- Sources `opencode-sandbox-pre-start-container.sh` from the project root, if it exists (see [Hooks](#hooks))
 - Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config.yaml`)
 - Mounts your project root as `/workspace` inside the container
 - Exposes OpenCode on `http://127.0.0.1:4096`
-- Press `Ctrl+C` to stop the container
+- Press `Ctrl+C` to stop and remove the container
 
 ### `ocs-web`
 
@@ -98,7 +98,6 @@ Use `ocs-web-auth` for authentication or authenticate manually in the browser wh
 
 - **Username:** `opencode`
 - **Password:** contents of `.opencode-sandbox/opencode-password` in your project root
-
 
 ### `ocs-web-auth`
 
@@ -120,9 +119,9 @@ Attaches an OpenCode terminal session to the running container.
 | Daily use | `ocs-start-container` |
 | After changing `mise.toml` | `ocs-rebuild-container` then `ocs-start-container` |
 | After changing `opencode-sandbox-config.yaml` | `ocs-rebuild-container` then `ocs-start-container` |
-| Stop the container | `Ctrl+C` in the `ocs-start-container` terminal |
+| Stop the container | `Ctrl+C` in the `ocs-start-container` terminal (container is removed) |
 
-> **Note:** The container is not removed on stop — state is preserved between sessions. `ocs-rebuild-container` will remove the old container before building a new image.
+> **Note:** Each `ocs-start-container` run creates a fresh container that is removed on stop. Session state is preserved between runs via mounted volumes (workspace and `.opencode-sandbox/opencode-state/`). `ocs-rebuild-container` rebuilds the image but does not affect the mounted state.
 
 ---
 
@@ -132,9 +131,13 @@ The container runs an internal [Squid](https://www.squid-cache.org/) proxy that 
 
 All outbound traffic is routed via the proxy automatically through the standard `http_proxy` / `https_proxy` environment variables set by the container entrypoint.
 
-### Configuring the sandbox
+> **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
 
-The `opencode-sandbox-config.yaml` file in your project root is a YAML file with four top-level keys. Lines starting with `#` are comments.
+---
+
+## Configuration — `opencode-sandbox-config.yaml`
+
+The `opencode-sandbox-config.yaml` file in your project root controls outbound network access and environment variables. It is safe to commit.
 
 > **Note:** Only a narrow YAML subset is supported: top-level section keys, one-level-deep list items (`- value`), and one-level-deep map entries (`key: value`). Anchors, multi-line strings, nested structures, and other YAML features are not supported.
 
@@ -160,65 +163,57 @@ env:
 - A leading dot matches the domain **and** all its subdomains (e.g. `.github.com` allows `github.com`, `api.github.com`, `raw.githubusercontent.com`, etc.)
 - Without a leading dot, only the exact domain is matched (e.g. `api.anthropic.com` does **not** allow `bedrock.anthropic.com`)
 - When in doubt, use the leading-dot form to avoid hard-to-debug connection failures
-- Used for AI providers, package registries, and any other HTTP/HTTPS endpoints
 
 **`host-ports`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
 - Use this for databases and other non-HTTP services running on the host or in another Docker container
 - The host is reachable via `docker.host` (injected automatically at container start)
 
-**`env-passthrough`** — host environment variable names to forward into the container:
-- Variables not set in the host environment are silently skipped
-- This avoids storing secrets in files — keep secrets in your shell environment (e.g. via your shell profile or a secret manager)
-- Format is always `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
+**`env-passthrough`** — host environment variables to forward into the container:
+- Format is `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
+- Values are read from the host shell at container start time; variables not set on the host are silently skipped
+- Use this for secrets and credentials — values never touch a file
 - A rebuild is required after adding or removing entries
 
-**`env`** — static `KEY: VALUE` environment variables set directly in the container:
+**`env`** — static environment variables set directly in the container:
 - Use this for non-secret project context that is safe to commit: repo name, project identifiers, feature flags, etc.
 - Values are literal — no shell expansion
 - A rebuild is required after adding or removing entries
 
-`ocs-rebuild-container` reads this file to generate derived build artifacts — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
-
-> **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
+`ocs-rebuild-container` reads this file to generate derived build artifacts — **a rebuild is required after changes**. The file is required; `ocs-rebuild-container` fails if it is missing.
 
 ---
 
-## Environment variables
+## Hooks
 
-Environment variables are forwarded into the container in two ways, both configured in `opencode-sandbox-config.yaml`.
+### `opencode-sandbox-pre-start-container.sh`
 
-### Static variables — `env` key
+If a file named `opencode-sandbox-pre-start-container.sh` exists in the project root, `ocs-start-container` will **source** it before starting the container. Because it is sourced (not executed as a subprocess), any `export` statements take effect in the calling shell and are picked up by `env-passthrough`.
 
-For non-secret project context that is safe to commit:
+Typical uses:
+- Refresh short-lived credentials (AWS SSO, GCP, Azure, Vault, …)
+- Derive env vars from the host at start time
 
-```yaml
-env:
-  GITHUB_REPOSITORY: my-org/my-repo
-  PROJECT_ENV: development
+`ocs-init` creates this file for you (empty, executable). If it contains secrets, add it to `.gitignore`:
+```
+opencode-sandbox-pre-start-container.sh
 ```
 
-Values are literal `KEY=VALUE` pairs passed directly to the container. Requires a rebuild after changes.
+**Example — refresh AWS SSO credentials and forward them into the container:**
 
-### Secret variables — `env-passthrough` key
+`opencode-sandbox-pre-start-container.sh`:
+```bash
+#!/usr/bin/env bash
+aws sso login --profile my-profile
+eval "$(aws configure export-credentials --profile my-profile --format env)"
+```
 
-For secrets and credentials that must not be stored in files:
-
+`opencode-sandbox-config.yaml`:
 ```yaml
 env-passthrough:
-  ANTHROPIC_API_KEY: ANTHROPIC_API_KEY
-  OPENAI_API_KEY: OPENAI_API_KEY
-  GH_TOKEN: MY_PROJECT_GH_TOKEN
+  AWS_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
+  AWS_SESSION_TOKEN: AWS_SESSION_TOKEN
 ```
-
-Only the variable *names* (and optional rename mapping) are listed in the config file. Values are read from the host environment at container start time:
-
-```bash
-export ANTHROPIC_API_KEY=sk-...
-export MY_PROJECT_GH_TOKEN=ghp_...
-ocs-start-container
-```
-
-Or add them to your shell profile (`.zshrc`, `.bashrc`, etc.) for permanent availability. Variables not set in the host environment are silently skipped. Requires a rebuild after adding or removing names.
 
 ---
 
@@ -246,16 +241,16 @@ Each project gets its own isolated container named after the project directory (
 
 ```
 .opencode-sandbox/
-├── container-name        # Locked container name for this project
-├── opencode-password     # Generated server password (created with owner-only permissions)
-├── mise.toml             # Copied from project root at build time
-├── squid.conf            # Copied from opencode-sandbox repo at build time
-├── squid-whitelist.txt       # Extracted from http-domain-whitelist at build time
-├── host-ports.txt            # Extracted from host-ports at build time
-├── env-passthrough.txt       # Extracted from env-passthrough at build time
-├── env.txt                   # Extracted from env at build time
-├── docker-build.log      # Docker build output (created during build)
-└── opencode-state/       # Persistent OpenCode state (mounted into the container)
+├── container-name          # Locked container name for this project
+├── opencode-password       # Generated server password (created with owner-only permissions)
+├── mise.toml               # Copied from project root at build time
+├── squid.conf              # Copied from opencode-sandbox repo at build time
+├── squid-whitelist.txt     # Extracted from http-domain-whitelist at build time
+├── host-ports.txt          # Extracted from host-ports at build time
+├── env-passthrough.txt     # Extracted from env-passthrough at build time
+├── env.txt                 # Extracted from env at build time
+├── docker-build.log        # Docker build output (created during build)
+└── opencode-state/         # Persistent OpenCode state (mounted into the container)
 ```
 
 OpenCode state (including session history, configuration, and cache) is persisted across container restarts by mounting `.opencode-sandbox/opencode-state/` as `/home/dev/.local/share/opencode` inside the container.
