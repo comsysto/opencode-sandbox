@@ -5,10 +5,8 @@ set -euo pipefail
 # Proxy: start squid and wait until it is ready
 # ---------------------------------------------------------------------------
 echo ">> starting squid proxy"
-squid 2>/dev/null
-
-echo ">> waiting for squid to be ready on port 3128"
-timeout 30 bash -c 'until echo >/dev/tcp/127.0.0.1/3128 2>/dev/null; do sleep 0.2; done' 2>/dev/null
+squid >/dev/null 2>&1
+timeout 30 bash -c 'until echo >/dev/tcp/127.0.0.1/3128 2>/dev/null; do sleep 0.2; done'
 echo ">> squid is ready"
 
 # ---------------------------------------------------------------------------
