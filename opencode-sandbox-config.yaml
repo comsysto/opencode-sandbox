@@ -26,10 +26,14 @@ host-ports:
 # Host env vars forwarded into the container.
 # Both key and value are required: CONTAINER_NAME: HOST_NAME
 env-passthrough:
+  GH_TOKEN: OPENCODE_SANDBOX_GH_TOKEN
+  ECOM_JIRA_API_TOKEN: ECOM_JIRA_API_TOKEN
   # ANTHROPIC_API_KEY: ANTHROPIC_API_KEY
   # OPENAI_API_KEY: OPENAI_API_KEY
   # GH_TOKEN: MY_PROJECT_GH_TOKEN
 
 # Static env vars set in the container. Safe to commit — no secrets here.
 env:
-  # GITHUB_REPOSITORY: my-org/my-repo
+  GH_REPO: github.com/comsysto/opencode-sandbox
+  GH_HOST: github.com
+
