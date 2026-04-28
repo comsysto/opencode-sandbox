@@ -43,7 +43,7 @@ Once installed, run the following from the **root of your project** to initializ
 ocs-init
 ```
 
-This will interactively create `mise.toml`, `opencode-sandbox-config`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
+This will interactively create `mise.toml`, `opencode-sandbox-config.yaml`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
 
 Then start it:
 
@@ -64,19 +64,19 @@ Initializes a target project for use with opencode-sandbox. Run once from the pr
 Interactively creates (each step skipped if already present, default answer is yes):
 
 1. `mise.toml` — minimal config with opencode only
-2. `opencode-sandbox-config` — section-based config controlling outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
+2. `opencode-sandbox-config.yaml` — YAML config controlling outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
 3. `opencode.jsonc` — OpenCode model, provider, and permission config
 4. `.gitignore` entries for `.opencode-sandbox/`
 5. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 
-Prepares build artifacts and rebuilds the Docker image. Run this whenever you want a fresh image (new password, updated `mise.toml`, updated `opencode-sandbox-config`, etc.).
+Prepares build artifacts and rebuilds the Docker image. Run this whenever you want a fresh image (new password, updated `mise.toml`, updated `opencode-sandbox-config.yaml`, etc.).
 
 - Derives a container name from your project directory (e.g. `opencode-my-project`)
 - Generates a random server password saved to `.opencode-sandbox/opencode-password` with owner-only permissions
 - Copies `mise.toml` into the build context
-- Parses `opencode-sandbox-config` into derived build artifacts
+- Parses `opencode-sandbox-config.yaml` into derived build artifacts
 - Builds the Docker image
 
 ### `ocs-start-container`
@@ -85,7 +85,7 @@ Starts the sandbox for the current project.
 
 - Resumes the existing container if it was previously stopped (state is preserved)
 - Creates a fresh container on first run
-- Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config`)
+- Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config.yaml`)
 - Mounts your project root as `/workspace` inside the container
 - Exposes OpenCode on `http://127.0.0.1:4096`
 - Press `Ctrl+C` to stop the container
@@ -119,7 +119,7 @@ Attaches an OpenCode terminal session to the running container.
 | First time setup | `ocs-init` then `ocs-start-container` |
 | Daily use | `ocs-start-container` |
 | After changing `mise.toml` | `ocs-rebuild-container` then `ocs-start-container` |
-| After changing `opencode-sandbox-config` | `ocs-rebuild-container` then `ocs-start-container` |
+| After changing `opencode-sandbox-config.yaml` | `ocs-rebuild-container` then `ocs-start-container` |
 | Stop the container | `Ctrl+C` in the `ocs-start-container` terminal |
 
 > **Note:** The container is not removed on stop — state is preserved between sessions. `ocs-rebuild-container` will remove the old container before building a new image.
@@ -134,45 +134,45 @@ All outbound traffic is routed via the proxy automatically through the standard 
 
 ### Configuring the sandbox
 
-The `opencode-sandbox-config` file in your project root uses a simple section-based format — a `[section]` header followed by one value per line. Lines starting with `#` are comments.
+The `opencode-sandbox-config.yaml` file in your project root is a YAML file with four top-level keys. Lines starting with `#` are comments.
 
+> **Note:** Only a narrow YAML subset is supported: top-level section keys, one-level-deep list items (`- value`), and one-level-deep map entries (`key: value`). Anchors, multi-line strings, nested structures, and other YAML features are not supported.
+
+```yaml
+http-domain-whitelist:
+  - .github.com
+  - api.anthropic.com
+  - registry.npmjs.org
+
+host-ports:
+  - 5432
+  - 6379
+
+env-passthrough:
+  ANTHROPIC_API_KEY: ANTHROPIC_API_KEY
+  GH_TOKEN: MY_PROJECT_GH_TOKEN
+
+env:
+  GITHUB_REPOSITORY: my-org/my-repo
 ```
-[http-domain-whitelist]
-.github.com
-api.anthropic.com
-registry.npmjs.org
 
-[host-ports]
-5432
-6379
-
-[env-passthrough]
-ANTHROPIC_API_KEY
-GITHUB_TOKEN
-
-[env]
-GITHUB_REPOSITORY=my-org/my-repo
-```
-
-**`[http-domain-whitelist]`** — domains allowed through the Squid HTTP/HTTPS proxy:
+**`http-domain-whitelist`** — domains allowed through the Squid HTTP/HTTPS proxy:
 - A leading dot matches the domain **and** all its subdomains (e.g. `.github.com` allows `github.com`, `api.github.com`, `raw.githubusercontent.com`, etc.)
 - Without a leading dot, only the exact domain is matched (e.g. `api.anthropic.com` does **not** allow `bedrock.anthropic.com`)
 - When in doubt, use the leading-dot form to avoid hard-to-debug connection failures
 - Used for AI providers, package registries, and any other HTTP/HTTPS endpoints
 
-**`[host-ports]`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
+**`host-ports`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
 - Use this for databases and other non-HTTP services running on the host or in another Docker container
 - The host is reachable via `docker.host` (injected automatically at container start)
 
-**`[env-passthrough]`** — host environment variable names to forward into the container:
+**`env-passthrough`** — host environment variable names to forward into the container:
 - Variables not set in the host environment are silently skipped
 - This avoids storing secrets in files — keep secrets in your shell environment (e.g. via your shell profile or a secret manager)
-- Two forms are supported:
-  - `VARNAME` — forward host `$VARNAME` into the container with the same name
-  - `CONTAINER=HOST` — forward host `$HOST` into the container as `CONTAINER` (rename)
+- Format is always `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
 - A rebuild is required after adding or removing entries
 
-**`[env]`** — static `KEY=VALUE` environment variables set directly in the container:
+**`env`** — static `KEY: VALUE` environment variables set directly in the container:
 - Use this for non-secret project context that is safe to commit: repo name, project identifiers, feature flags, etc.
 - Values are literal — no shell expansion
 - A rebuild is required after adding or removing entries
@@ -185,16 +185,16 @@ GITHUB_REPOSITORY=my-org/my-repo
 
 ## Environment variables
 
-Environment variables are forwarded into the container in two ways, both configured in `opencode-sandbox-config`.
+Environment variables are forwarded into the container in two ways, both configured in `opencode-sandbox-config.yaml`.
 
 ### Static variables — `[env]` section
 
 For non-secret project context that is safe to commit:
 
-```
-[env]
-GITHUB_REPOSITORY=my-org/my-repo
-PROJECT_ENV=development
+```yaml
+env:
+  GITHUB_REPOSITORY: my-org/my-repo
+  PROJECT_ENV: development
 ```
 
 Values are literal `KEY=VALUE` pairs passed directly to the container. Requires a rebuild after changes.
@@ -203,11 +203,11 @@ Values are literal `KEY=VALUE` pairs passed directly to the container. Requires 
 
 For secrets and credentials that must not be stored in files:
 
-```
-[env-passthrough]
-ANTHROPIC_API_KEY
-OPENAI_API_KEY
-GH_TOKEN=MY_PROJECT_GH_TOKEN
+```yaml
+env-passthrough:
+  ANTHROPIC_API_KEY: ANTHROPIC_API_KEY
+  OPENAI_API_KEY: OPENAI_API_KEY
+  GH_TOKEN: MY_PROJECT_GH_TOKEN
 ```
 
 Only the variable *names* (and optional rename mapping) are listed in the config file. Values are read from the host environment at container start time:

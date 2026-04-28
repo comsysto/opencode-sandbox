@@ -22,3 +22,17 @@ No tests, no formatter, no typecheck, no CI workflows.
 - `ocs-rebuild-container` must run from the **project root** (where `mise.toml` lives); all other `ocs-*` commands auto-detect root by walking up
 - Container name is derived from project dir name: `opencode-<dirname>`
 - Init templates (copied into target projects by `ocs-init`) live in `init-templates/`
+
+## Design decisions
+
+### `opencode-sandbox-config.yaml` — YAML subset parsed in bash
+
+The config file uses a YAML subset deliberately chosen to be parseable without any external dependencies. No `yq`, `python`, or other tools are required on the host.
+
+The supported subset is intentionally narrow:
+- Top-level keys only (section headers): `key:`
+- List items one level deep: `  - value`
+- Map entries one level deep: `  key: value`
+- Line comments (`#`) and blank lines
+
+Anything outside this subset — anchors, multi-line strings, nested structures, typed values — is silently ignored by the parser in `ocs-rebuild-container`. Do not add configuration that relies on YAML features beyond the above. If richer configuration is ever needed, switch to a proper YAML parser (`yq`) rather than extending the bash parser.

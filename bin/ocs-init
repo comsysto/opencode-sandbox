@@ -48,15 +48,15 @@ fi
 echo ""
 
 # --- opencode-sandbox-config (required) ---
-CONFIG_FILE="${TARGET_DIR}/opencode-sandbox-config"
-CONFIG_TEMPLATE="${SANDBOX_HOME}/init-templates/opencode-sandbox-config"
+CONFIG_FILE="${TARGET_DIR}/opencode-sandbox-config.yaml"
+CONFIG_TEMPLATE="${SANDBOX_HOME}/init-templates/opencode-sandbox-config.yaml"
 echo "Step 2/5: Create ${CONFIG_FILE} from template (required)."
 echo "  This file controls outbound proxy access, host port access, and which"
 echo "  host environment variables are forwarded into the container."
 if [[ -f "${CONFIG_FILE}" ]]; then
   echo "  Already exists — skipping."
 else
-  if confirm "  Create opencode-sandbox-config from template?"; then
+  if confirm "  Create opencode-sandbox-config.yaml from template?"; then
     cp "${CONFIG_TEMPLATE}" "${CONFIG_FILE}"
     echo "  ✓ Created."
   else

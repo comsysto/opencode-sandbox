@@ -32,25 +32,16 @@ fi
 
 echo "Starting container ${SANDBOX_NAME}..."
 
-# Build -e flags for env vars listed in env-passthrough.txt.
-# Each line is either:
-#   VARNAME            — forward host $VARNAME into the container unchanged
-#   CONTAINER=HOST     — forward host $HOST into the container as CONTAINER
+# Build -e flags from env-passthrough.txt (format: CONTAINER_NAME=HOST_NAME)
 env_flags=()
 ENV_PASSTHROUGH_FILE="${OPENCODE_SANDBOX_DIR}/env-passthrough.txt"
 if [[ -f "${ENV_PASSTHROUGH_FILE}" ]]; then
   while IFS= read -r entry || [[ -n "${entry}" ]]; do
     [[ -z "${entry}" ]] && continue
-    if [[ "${entry}" == *=* ]]; then
-      container_name="${entry%%=*}"
-      host_name="${entry#*=}"
-      if [[ -n "${!host_name+set}" ]]; then
-        env_flags+=(-e "${container_name}=${!host_name}")
-      fi
-    else
-      if [[ -n "${!entry+set}" ]]; then
-        env_flags+=(-e "${entry}")
-      fi
+    container_name="${entry%%=*}"
+    host_name="${entry#*=}"
+    if [[ -n "${!host_name+set}" ]]; then
+      env_flags+=(-e "${container_name}=${!host_name}")
     fi
   done < "${ENV_PASSTHROUGH_FILE}"
 fi
