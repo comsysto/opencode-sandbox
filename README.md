@@ -170,7 +170,7 @@ env:
 
 **`env-passthrough`** — host environment variables to forward into the container:
 - Format is `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
-- Values are read from the host shell at container start time; variables not set on the host are silently skipped
+- Values are read from the host shell at container start time; variables not set on the host are skipped and noted in the startup summary
 - Use this for secrets and credentials — values never touch a file
 - A rebuild is required after adding or removing entries
 
