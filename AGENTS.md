@@ -6,6 +6,17 @@ README.md is intended for end users (developers setting up or using the sandbox)
 
 Every change to the user experience (new commands, changed behaviour, new files created in target projects, etc.) must be reflected in README.md.
 
+## Execution environment
+
+This project uses itself as its own sandbox — the AI agent runs **inside the opencode-sandbox container** for this repository. This means:
+
+- The workspace is mounted at `/workspace` inside the container
+- Outbound network access is restricted to the domains whitelisted in `opencode-sandbox-config.yaml`
+- Host environment variables are forwarded as configured in the `env-passthrough` section — in particular `GH_TOKEN` for GitHub CLI access
+- `docker` and `podman` are **not available** inside the container — `ocs-rebuild-container` and `ocs-start-container` cannot be run here; ask the user to run them on the host
+- The `gh` CLI is available and authenticated via `GH_TOKEN`
+- `shellcheck` is available for linting
+
 ## Lint (only CI-equivalent check)
 
 ```sh
