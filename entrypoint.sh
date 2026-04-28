@@ -53,7 +53,7 @@ while IFS= read -r port || [[ -n "${port:-}" ]]; do
 done < /etc/host-ports.txt
 
 # ---------------------------------------------------------------------------
-# Summary banner
+# OpenCode credentials
 # ---------------------------------------------------------------------------
 echo ""
 echo ">> sandbox configuration"

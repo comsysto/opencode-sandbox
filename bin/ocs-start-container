@@ -31,6 +31,7 @@ if ! "${CONTAINER_RUNTIME}" image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; the
 fi
 
 echo "Starting container ${SANDBOX_NAME}..."
+echo ""
 
 # Build -e flags from env-passthrough.txt (format: CONTAINER_NAME=HOST_NAME)
 env_flags=()
@@ -58,12 +59,40 @@ if [[ -f "${ENV_STATIC_FILE}" ]]; then
   done < "${ENV_STATIC_FILE}"
 fi
 
-echo "  env vars:"
+# Print full config summary before handing off to docker
+# shellcheck disable=SC2153  # PORT and LOCALHOST are defined in shared
+echo "   sandbox:   ${SANDBOX_NAME}"
+# shellcheck disable=SC2153
+echo "   url:       http://${LOCALHOST}:${PORT}"
+echo "   workspace: ${ROOT_DIR}"
+echo ""
+echo "   env vars:"
 if [[ "${#env_log[@]}" -gt 0 ]]; then
   for entry in "${env_log[@]}"; do echo "${entry}"; done
 else
   echo "    (none)"
 fi
+echo ""
+echo "   https domains whitelisted:"
+SQUID_WHITELIST="${OPENCODE_SANDBOX_DIR}/squid-whitelist.txt"
+if [[ -f "${SQUID_WHITELIST}" ]]; then
+  while IFS= read -r domain || [[ -n "${domain}" ]]; do
+    echo "     ${domain}"
+  done < "${SQUID_WHITELIST}"
+fi
+echo ""
+echo "   host ports:"
+HOST_PORTS_FILE="${OPENCODE_SANDBOX_DIR}/host-ports.txt"
+if [[ -f "${HOST_PORTS_FILE}" ]]; then
+  while IFS= read -r port || [[ -n "${port}" ]]; do
+    echo "     docker.host:${port}"
+  done < "${HOST_PORTS_FILE}"
+  if [[ ! -s "${HOST_PORTS_FILE}" ]]; then
+    echo "     (none)"
+  fi
+fi
+echo ""
+echo "---"
 echo ""
 
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
