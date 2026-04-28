@@ -65,7 +65,7 @@ if [[ -f "${CONFIG_FILE}" ]]; then
       continue
     fi
     # Map entry: "  key: value"
-    if [[ "${line}" =~ ^[[:space:]]+([^[:space:]][^:]*?):[[:space:]]+(.+)$ ]]; then
+    if [[ "${line}" =~ ^[[:space:]]+([^[:space:]:]+):[[:space:]]+(.+)$ ]]; then
       key="${BASH_REMATCH[1]}"
       value="${BASH_REMATCH[2]}"
       case "${section}" in
