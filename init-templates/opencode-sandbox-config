@@ -1,0 +1,44 @@
+# opencode-sandbox configuration
+# Changes require a container rebuild: ocs-rebuild-container
+
+# ------------------------------------------------- #
+# Outbound HTTP/HTTPS domains allowed via the proxy. #
+# A leading dot matches the domain and subdomains.   #
+# ------------------------------------------------- #
+[http-domain-whitelist]
+.githubusercontent.com
+.githubassets.com
+.github.com
+.githubcopilot.com
+mise.run
+.npmjs.org
+.maven.org
+# api.anthropic.com
+# api.openai.com
+# .openrouter.ai
+
+# ------------------------------------------------- #
+# TCP ports on the host the container may reach      #
+# directly, bypassing the proxy (e.g. databases).   #
+# ------------------------------------------------- #
+[host-ports]
+# 5432
+# 3306
+# 6379
+# 27017
+
+# ------------------------------------------------- #
+# Host env vars forwarded into the container.        #
+# VARNAME or CONTAINER=HOST to rename.               #
+# ------------------------------------------------- #
+[env-passthrough]
+# ANTHROPIC_API_KEY
+# OPENAI_API_KEY
+# GH_TOKEN=MY_PROJECT_GH_TOKEN
+
+# ------------------------------------------------- #
+# Static env vars set in the container.              #
+# Safe to commit — no secrets here.                  #
+# ------------------------------------------------- #
+[env]
+# GITHUB_REPOSITORY=my-org/my-repo

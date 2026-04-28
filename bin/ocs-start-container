@@ -31,12 +31,45 @@ if ! "${CONTAINER_RUNTIME}" image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; the
 fi
 
 echo "Starting container ${SANDBOX_NAME}..."
+
+# Build -e flags for env vars listed in env-passthrough.txt.
+# Each line is either:
+#   VARNAME            — forward host $VARNAME into the container unchanged
+#   CONTAINER=HOST     — forward host $HOST into the container as CONTAINER
+env_flags=()
+ENV_PASSTHROUGH_FILE="${OPENCODE_SANDBOX_DIR}/env-passthrough.txt"
+if [[ -f "${ENV_PASSTHROUGH_FILE}" ]]; then
+  while IFS= read -r entry || [[ -n "${entry}" ]]; do
+    [[ -z "${entry}" ]] && continue
+    if [[ "${entry}" == *=* ]]; then
+      container_name="${entry%%=*}"
+      host_name="${entry#*=}"
+      if [[ -n "${!host_name+set}" ]]; then
+        env_flags+=(-e "${container_name}=${!host_name}")
+      fi
+    else
+      if [[ -n "${!entry+set}" ]]; then
+        env_flags+=(-e "${entry}")
+      fi
+    fi
+  done < "${ENV_PASSTHROUGH_FILE}"
+fi
+
+# Build --env KEY=VALUE flags for static env vars from env.txt
+ENV_STATIC_FILE="${OPENCODE_SANDBOX_DIR}/env.txt"
+if [[ -f "${ENV_STATIC_FILE}" ]]; then
+  while IFS= read -r assignment || [[ -n "${assignment}" ]]; do
+    [[ -n "${assignment}" ]] && env_flags+=(--env "${assignment}")
+  done < "${ENV_STATIC_FILE}"
+fi
+
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
   --add-host=docker.host:host-gateway \
   --name "${SANDBOX_NAME}" \
   -p "${LOCALHOST}:${PORT}:4096" \
   -v "${ROOT_DIR}:/workspace" \
   -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
+  "${env_flags[@]+"${env_flags[@]}"}" \
   "${SANDBOX_NAME}"
 
 

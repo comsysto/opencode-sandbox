@@ -36,12 +36,16 @@ cp "${SANDBOX_HOME}/entrypoint.sh" "${OPENCODE_SANDBOX_DIR}/entrypoint.sh"
 echo "Copying squid configuration ..."
 cp "${SANDBOX_HOME}/squid.conf" "${OPENCODE_SANDBOX_DIR}/squid.conf"
 
-echo "Processing firewall configuration ..."
-if [[ -f "${FIREWALL_FILE}" ]]; then
+echo "Processing sandbox configuration ..."
+if [[ -f "${CONFIG_FILE}" ]]; then
   SQUID_WHITELIST="${OPENCODE_SANDBOX_DIR}/squid-whitelist.txt"
   HOST_PORTS="${OPENCODE_SANDBOX_DIR}/host-ports.txt"
+  ENV_PASSTHROUGH="${OPENCODE_SANDBOX_DIR}/env-passthrough.txt"
+  ENV_STATIC="${OPENCODE_SANDBOX_DIR}/env.txt"
   true > "${SQUID_WHITELIST}"
   true > "${HOST_PORTS}"
+  true > "${ENV_PASSTHROUGH}"
+  true > "${ENV_STATIC}"
   mode=""
   while IFS= read -r line || [[ -n "${line}" ]]; do
     # Skip comment lines and blank/whitespace-only lines
@@ -49,18 +53,24 @@ if [[ -f "${FIREWALL_FILE}" ]]; then
     # Section headers switch mode
     if   [[ "${line}" == "[http-domain-whitelist]" ]]; then mode="whitelist"; continue
     elif [[ "${line}" == "[host-ports]"            ]]; then mode="ports";     continue
-    elif [[ "${line}" == "["*          ]]; then mode="";          continue
+    elif [[ "${line}" == "[env-passthrough]"       ]]; then mode="env";       continue
+    elif [[ "${line}" == "[env]"                   ]]; then mode="envstatic"; continue
+    elif [[ "${line}" == "["*                      ]]; then mode="";          continue
     fi
     # Append value to the appropriate output file
-    if   [[ "${mode}" == "whitelist" ]]; then echo "${line}" >> "${SQUID_WHITELIST}"
-    elif [[ "${mode}" == "ports"     ]]; then echo "${line}" >> "${HOST_PORTS}"
+    if   [[ "${mode}" == "whitelist"  ]]; then echo "${line}" >> "${SQUID_WHITELIST}"
+    elif [[ "${mode}" == "ports"      ]]; then echo "${line}" >> "${HOST_PORTS}"
+    elif [[ "${mode}" == "env"        ]]; then echo "${line}" >> "${ENV_PASSTHROUGH}"
+    elif [[ "${mode}" == "envstatic"  ]]; then echo "${line}" >> "${ENV_STATIC}"
     fi
-  done < "${FIREWALL_FILE}"
+  done < "${CONFIG_FILE}"
   echo "  Extracted $(wc -l < "${SQUID_WHITELIST}") whitelisted domain(s) into squid-whitelist.txt"
   echo "  Extracted $(wc -l < "${HOST_PORTS}") host TCP port(s) into host-ports.txt"
+  echo "  Extracted $(wc -l < "${ENV_PASSTHROUGH}") env var name(s) into env-passthrough.txt"
+  echo "  Extracted $(wc -l < "${ENV_STATIC}") static env var(s) into env.txt"
 else
-  echo "  Missing required firewall file: ${FIREWALL_FILE}" >&2
-  echo "  Create opencode-sandbox-firewall (use ocs-init template) and rebuild." >&2
+  echo "  Missing required config file: ${CONFIG_FILE}" >&2
+  echo "  Create opencode-sandbox-config (use ocs-init template) and rebuild." >&2
   exit 1
 fi
 

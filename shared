@@ -17,7 +17,7 @@ refresh_root_paths() {
   MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
   CONTAINER_NAME_FILE="${OPENCODE_SANDBOX_DIR}/container-name"
   OPENCODE_STATE_DIR="${OPENCODE_SANDBOX_DIR}/opencode-state"
-  FIREWALL_FILE="${ROOT_DIR}/opencode-sandbox-firewall"
+  CONFIG_FILE="${ROOT_DIR}/opencode-sandbox-config"
 
   # Container name: read from file if present, otherwise derive from project directory name
   if [[ -f "${CONTAINER_NAME_FILE}" ]]; then

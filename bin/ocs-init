@@ -47,34 +47,17 @@ else
 fi
 echo ""
 
-# --- opencode-sandbox.env ---
-ENV_FILE="${TARGET_DIR}/opencode-sandbox.env"
-echo "Step 2/6: Create an empty ${ENV_FILE}."
-echo "  This file is sourced by the container entrypoint; add project-specific"
-echo "  environment variables (e.g. API keys) here without rebuilding the image."
-if [[ -f "${ENV_FILE}" ]]; then
+# --- opencode-sandbox-config (required) ---
+CONFIG_FILE="${TARGET_DIR}/opencode-sandbox-config"
+CONFIG_TEMPLATE="${SANDBOX_HOME}/init-templates/opencode-sandbox-config"
+echo "Step 2/5: Create ${CONFIG_FILE} from template (required)."
+echo "  This file controls outbound proxy access, host port access, and which"
+echo "  host environment variables are forwarded into the container."
+if [[ -f "${CONFIG_FILE}" ]]; then
   echo "  Already exists — skipping."
 else
-  if confirm "  Create opencode-sandbox.env?"; then
-    touch "${ENV_FILE}"
-    echo "  ✓ Created."
-  else
-    echo "  Skipped."
-  fi
-fi
-echo ""
-
-# --- opencode-sandbox-firewall (required) ---
-FIREWALL_FILE="${TARGET_DIR}/opencode-sandbox-firewall"
-FIREWALL_TEMPLATE="${SANDBOX_HOME}/init-templates/opencode-sandbox-firewall"
-echo "Step 3/6: Create ${FIREWALL_FILE} from template (required)."
-echo "  This whitelist controls outbound proxy access; OpenCode will not be able"
-echo "  to reach providers/package registries unless required domains are allowed."
-if [[ -f "${FIREWALL_FILE}" ]]; then
-  echo "  Already exists — skipping."
-else
-  if confirm "  Create opencode-sandbox-firewall from template?"; then
-    cp "${FIREWALL_TEMPLATE}" "${FIREWALL_FILE}"
+  if confirm "  Create opencode-sandbox-config from template?"; then
+    cp "${CONFIG_TEMPLATE}" "${CONFIG_FILE}"
     echo "  ✓ Created."
   else
     echo "  This file is required. Aborting initialization."
@@ -86,7 +69,7 @@ echo ""
 # --- opencode.jsonc ---
 JSONC_FILE="${TARGET_DIR}/opencode.jsonc"
 JSONC_SOURCE="${SANDBOX_HOME}/init-templates/opencode.jsonc"
-echo "Step 4/6: Copy opencode.jsonc from the sandbox home to ${JSONC_FILE}."
+echo "Step 3/5: Copy opencode.jsonc from the sandbox home to ${JSONC_FILE}."
 echo "  This file configures the OpenCode model, provider, and permission policy."
 if [[ -f "${JSONC_FILE}" ]]; then
   echo "  Already exists — skipping."
@@ -103,14 +86,14 @@ echo ""
 # --- .gitignore ---
 GITIGNORE_FILE="${TARGET_DIR}/.gitignore"
 GITIGNORE_BLOCK_MARKER="# opencode-sandbox"
-echo "Step 5/6: Add sandbox-local entries to ${GITIGNORE_FILE}."
-echo "  These paths contain secrets and local state that must not be committed."
+echo "Step 4/5: Add sandbox-local entries to ${GITIGNORE_FILE}."
+echo "  These paths contain generated state that must not be committed."
 if [[ -f "${GITIGNORE_FILE}" ]]; then
   if grep -qF "${GITIGNORE_BLOCK_MARKER}" "${GITIGNORE_FILE}"; then
     echo "  Entries already present — skipping."
   else
     if confirm "  Append opencode entries to existing .gitignore?"; then
-      printf '\n%s\n.opencode-sandbox/\nopencode-sandbox.env\nopencode-sandbox-firewall\n' "${GITIGNORE_BLOCK_MARKER}" >> "${GITIGNORE_FILE}"
+      printf '\n%s\n.opencode-sandbox/\n' "${GITIGNORE_BLOCK_MARKER}" >> "${GITIGNORE_FILE}"
       echo "  ✓ Appended."
     else
       echo "  Skipped."
@@ -118,7 +101,7 @@ if [[ -f "${GITIGNORE_FILE}" ]]; then
   fi
 else
   if confirm "  No .gitignore found. Create one with opencode entries?"; then
-    printf '%s\n.opencode-sandbox/\nopencode-sandbox.env\nopencode-sandbox-firewall\n' "${GITIGNORE_BLOCK_MARKER}" > "${GITIGNORE_FILE}"
+    printf '%s\n.opencode-sandbox/\n' "${GITIGNORE_BLOCK_MARKER}" > "${GITIGNORE_FILE}"
     echo "  ✓ Created."
   else
     echo "  Skipped."
@@ -127,7 +110,7 @@ fi
 echo ""
 
 # --- rebuild the container ---
-echo "Step 6/6: Build the Docker container image for this project."
+echo "Step 5/5: Build the Docker container image for this project."
 echo "  This compiles the image using the Dockerfile in the sandbox home and"
 echo "  copies the mise.toml into the container build context."
 if confirm "  Run ocs-rebuild-container?"; then

@@ -85,18 +85,10 @@ export no_proxy="${_no_proxy_hosts}"
 export NO_PROXY="${_no_proxy_hosts}"
 
 # ---------------------------------------------------------------------------
-# OpenCode credentials and optional project env file
+# OpenCode credentials
 # ---------------------------------------------------------------------------
 OPENCODE_SERVER_PASSWORD=$(cat /opencode-password)
 export OPENCODE_SERVER_PASSWORD
-
-if [[ -f /workspace/opencode-sandbox.env ]]; then
-  echo ">> loading environment from opencode-sandbox.env"
-  set -o allexport
-  # shellcheck source=/dev/null
-  source /workspace/opencode-sandbox.env
-  set +o allexport
-fi
 
 # ---------------------------------------------------------------------------
 # Start OpenCode as the dev user (gosu drops root, env is inherited)

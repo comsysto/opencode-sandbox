@@ -43,7 +43,7 @@ Once installed, run the following from the **root of your project** to initializ
 ocs-init
 ```
 
-This will interactively create `mise.toml`, `opencode-sandbox.env`, `opencode-sandbox-firewall`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
+This will interactively create `mise.toml`, `opencode-sandbox-config`, `opencode.jsonc`, update `.gitignore`, and build the container — confirming each step before acting.
 
 Then start it:
 
@@ -64,19 +64,19 @@ Initializes a target project for use with opencode-sandbox. Run once from the pr
 Interactively creates (each step skipped if already present, default answer is yes):
 
 1. `mise.toml` — minimal config with opencode only
-2. `opencode-sandbox.env` — empty env file for project-specific variables
-3. `opencode-sandbox-firewall` — section-based config controlling outbound HTTP/HTTPS whitelist and host TCP ports
-4. `opencode.jsonc` — OpenCode model, provider, and permission config
-5. `.gitignore` entries for `.opencode-sandbox/`, `opencode-sandbox.env`, and `opencode-sandbox-firewall`
-6. Builds the Docker container image
+2. `opencode-sandbox-config` — section-based config controlling outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
+3. `opencode.jsonc` — OpenCode model, provider, and permission config
+4. `.gitignore` entries for `.opencode-sandbox/`
+5. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 
-Prepares build artifacts and rebuilds the Docker image. Run this whenever you want a fresh image (new password, updated `mise.toml`, etc.).
+Prepares build artifacts and rebuilds the Docker image. Run this whenever you want a fresh image (new password, updated `mise.toml`, updated `opencode-sandbox-config`, etc.).
 
 - Derives a container name from your project directory (e.g. `opencode-my-project`)
 - Generates a random server password saved to `.opencode-sandbox/opencode-password` with owner-only permissions
 - Copies `mise.toml` into the build context
+- Parses `opencode-sandbox-config` into derived build artifacts
 - Builds the Docker image
 
 ### `ocs-start-container`
@@ -85,6 +85,7 @@ Starts the sandbox for the current project.
 
 - Resumes the existing container if it was previously stopped (state is preserved)
 - Creates a fresh container on first run
+- Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config`)
 - Mounts your project root as `/workspace` inside the container
 - Exposes OpenCode on `http://127.0.0.1:4096`
 - Press `Ctrl+C` to stop the container
@@ -118,6 +119,7 @@ Attaches an OpenCode terminal session to the running container.
 | First time setup | `ocs-init` then `ocs-start-container` |
 | Daily use | `ocs-start-container` |
 | After changing `mise.toml` | `ocs-rebuild-container` then `ocs-start-container` |
+| After changing `opencode-sandbox-config` | `ocs-rebuild-container` then `ocs-start-container` |
 | Stop the container | `Ctrl+C` in the `ocs-start-container` terminal |
 
 > **Note:** The container is not removed on stop — state is preserved between sessions. `ocs-rebuild-container` will remove the old container before building a new image.
@@ -130,9 +132,9 @@ The container runs an internal [Squid](https://www.squid-cache.org/) proxy that 
 
 All outbound traffic is routed via the proxy automatically through the standard `http_proxy` / `https_proxy` environment variables set by the container entrypoint.
 
-### Configuring the firewall
+### Configuring the sandbox
 
-The `opencode-sandbox-firewall` file in your project root uses a simple section-based format — a `[section]` header followed by one value per line. Lines starting with `#` are comments.
+The `opencode-sandbox-config` file in your project root uses a simple section-based format — a `[section]` header followed by one value per line. Lines starting with `#` are comments.
 
 ```
 [http-domain-whitelist]
@@ -143,6 +145,13 @@ registry.npmjs.org
 [host-ports]
 5432
 6379
+
+[env-passthrough]
+ANTHROPIC_API_KEY
+GITHUB_TOKEN
+
+[env]
+GITHUB_REPOSITORY=my-org/my-repo
 ```
 
 **`[http-domain-whitelist]`** — domains allowed through the Squid HTTP/HTTPS proxy:
@@ -154,9 +163,21 @@ registry.npmjs.org
 **`[host-ports]`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
 - Use this for databases and other non-HTTP services running on the host or in another Docker container
 - The host is reachable via `docker.host` (injected automatically at container start)
-- Pass the connection string via `opencode-sandbox.env` (e.g. `DATABASE_URL=postgres://user:pass@172.17.0.1:5432/mydb`)
 
-`ocs-rebuild-container` reads this file to generate the derived `squid-whitelist.txt` and `host-ports.txt` files that are copied into the Docker build context — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
+**`[env-passthrough]`** — host environment variable names to forward into the container:
+- Variables not set in the host environment are silently skipped
+- This avoids storing secrets in files — keep secrets in your shell environment (e.g. via your shell profile or a secret manager)
+- Two forms are supported:
+  - `VARNAME` — forward host `$VARNAME` into the container with the same name
+  - `CONTAINER=HOST` — forward host `$HOST` into the container as `CONTAINER` (rename)
+- A rebuild is required after adding or removing entries
+
+**`[env]`** — static `KEY=VALUE` environment variables set directly in the container:
+- Use this for non-secret project context that is safe to commit: repo name, project identifiers, feature flags, etc.
+- Values are literal — no shell expansion
+- A rebuild is required after adding or removing entries
+
+`ocs-rebuild-container` reads this file to generate derived build artifacts — **a rebuild is required after changes**. The file is required (`ocs-init` creates it from a template); `ocs-rebuild-container` fails if it is missing.
 
 > **Note:** The container requires the `NET_ADMIN` Docker capability for `iptables` — this is added automatically by `ocs-start-container`.
 
@@ -164,17 +185,40 @@ registry.npmjs.org
 
 ## Environment variables
 
-Project-specific environment variables (e.g. API keys) can be passed to the container via `opencode-sandbox.env` in the project root:
+Environment variables are forwarded into the container in two ways, both configured in `opencode-sandbox-config`.
+
+### Static variables — `[env]` section
+
+For non-secret project context that is safe to commit:
 
 ```
-ANTHROPIC_API_KEY=sk-...
-GITHUB_TOKEN=ghp_...
+[env]
+GITHUB_REPOSITORY=my-org/my-repo
+PROJECT_ENV=development
 ```
 
-- Plain `KEY=VALUE` format, one per line — no `export` needed
-- The file is sourced by the container entrypoint before OpenCode starts, so all variables are automatically exported
-- Takes effect without rebuilding the container — just restart with `ocs-start-container`
-- Add `opencode-sandbox.env` to `.gitignore` if it contains secrets (`ocs-init` does this automatically)
+Values are literal `KEY=VALUE` pairs passed directly to the container. Requires a rebuild after changes.
+
+### Secret variables — `[env-passthrough]` section
+
+For secrets and credentials that must not be stored in files:
+
+```
+[env-passthrough]
+ANTHROPIC_API_KEY
+OPENAI_API_KEY
+GH_TOKEN=MY_PROJECT_GH_TOKEN
+```
+
+Only the variable *names* (and optional rename mapping) are listed in the config file. Values are read from the host environment at container start time:
+
+```bash
+export ANTHROPIC_API_KEY=sk-...
+export MY_PROJECT_GH_TOKEN=ghp_...
+ocs-start-container
+```
+
+Or add them to your shell profile (`.zshrc`, `.bashrc`, etc.) for permanent availability. Variables not set in the host environment are silently skipped. Requires a rebuild after adding or removing names.
 
 ---
 
@@ -206,9 +250,10 @@ Each project gets its own isolated container named after the project directory (
 ├── opencode-password     # Generated server password (created with owner-only permissions)
 ├── mise.toml             # Copied from project root at build time
 ├── squid.conf            # Copied from opencode-sandbox repo at build time
-├── opencode-sandbox-firewall # Copied from project root at build time (section-based format)
 ├── squid-whitelist.txt       # Extracted from [http-domain-whitelist] section at build time
 ├── host-ports.txt            # Extracted from [host-ports] section at build time
+├── env-passthrough.txt       # Extracted from [env-passthrough] section at build time
+├── env.txt                   # Extracted from [env] section at build time
 ├── docker-build.log      # Docker build output (created during build)
 └── opencode-state/       # Persistent OpenCode state (mounted into the container)
 ```
