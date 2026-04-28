@@ -53,24 +53,6 @@ while IFS= read -r port || [[ -n "${port:-}" ]]; do
 done < /etc/host-ports.txt
 
 # ---------------------------------------------------------------------------
-# OpenCode credentials
-# ---------------------------------------------------------------------------
-echo ""
-echo ">> sandbox configuration"
-echo "   host: docker.host -> ${HOST_IP:-<none>}"
-echo ""
-echo "   host ports:"
-while IFS= read -r port || [[ -n "${port:-}" ]]; do
-  echo "     docker.host:${port}"
-done < /etc/host-ports.txt
-echo ""
-echo "   https domains whitelisted:"
-while IFS= read -r domain || [[ -n "${domain:-}" ]]; do
-  echo "     ${domain}"
-done < /etc/squid/squid-whitelist.txt
-echo ""
-
-# ---------------------------------------------------------------------------
 # Environment: route outbound traffic through squid for all child processes
 # ---------------------------------------------------------------------------
 export http_proxy="http://127.0.0.1:3128"
