@@ -48,7 +48,7 @@ RUN chmod ugo+r /etc/mise/config.toml
 RUN mise install --system
 
 # Squid proxy configuration and domain whitelist
-# squid-whitelist.txt is extracted from opencode-sandbox-firewall by ocs-rebuild-container
+# squid-whitelist.txt is extracted from opencode-sandbox-config.yaml by ocs-rebuild-container
 COPY squid.conf /etc/squid/squid.conf
 COPY squid-whitelist.txt /etc/squid/squid-whitelist.txt
 # Host TCP ports allowed through the firewall (one port number per line)
