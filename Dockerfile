@@ -37,11 +37,11 @@ RUN existing_user=$(getent passwd ${USER_ID} | cut -d: -f1); \
     fi
 
 
-RUN mkdir -p ${WORKSPACE_DIR}
+RUN mkdir -p "${WORKSPACE_DIR}"
 # precreate directory where we mount the volume for opencode and setup permissions for the dev user
 # otherwise the directory will be created by root when mounting and the dev user won't have permissions to write to it
 RUN mkdir -p /home/dev/.local/share
-RUN chown -R ${USER_ID}:${GROUP_ID} ${WORKSPACE_DIR} /home/dev/.local
+RUN chown -R ${USER_ID}:${GROUP_ID} "${WORKSPACE_DIR}" /home/dev/.local
 
 RUN curl https://mise.run | sh
 
