@@ -77,7 +77,7 @@ echo ">> start opencode"
 # SC2016: single quotes are intentional — expressions must expand in the dev user's shell, not root's
 # shellcheck disable=SC2016
 exec gosu dev bash -c '
-  mise trust --ignore /workspace/mise.toml
+  mise trust --ignore "${WORKSPACE_DIR}/mise.toml"
   eval "$(mise activate --shell bash)"
   exec "$(mise where github:anomalyco/opencode)/opencode" web --mdns
 '

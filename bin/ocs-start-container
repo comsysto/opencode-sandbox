@@ -138,7 +138,7 @@ fi
   ${add_host_arg:+"${add_host_arg}"} \
   --name "${SANDBOX_NAME}" \
   -p "${LOCALHOST}:${PORT}:4096" \
-  -v "${ROOT_DIR}:/workspace" \
+  -v "${ROOT_DIR}:/$(basename "${ROOT_DIR}")" \
   -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
   "${env_flags[@]+"${env_flags[@]}"}" \
   "${SANDBOX_NAME}"

@@ -10,7 +10,7 @@ Every change to the user experience (new commands, changed behaviour, new files 
 
 This project uses itself as its own sandbox — the AI agent runs **inside the opencode-sandbox container** for this repository. This means:
 
-- The workspace is mounted at `/workspace` inside the container
+- The workspace is mounted at `/<project-name>` inside the container (derived from the host project directory name)
 - Outbound network access is restricted to the domains whitelisted in `opencode-sandbox-config.yaml`
 - Host environment variables are forwarded as configured in the `env-passthrough` section — in particular `GH_TOKEN` for GitHub CLI access
 - `docker` and `podman` are **not available** inside the container — `ocs-rebuild-container` and `ocs-start-container` cannot be run here; ask the user to run them on the host
