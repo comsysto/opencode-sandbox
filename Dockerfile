@@ -2,8 +2,10 @@ FROM ubuntu:resolute-20260413
 
 ARG USER_ID
 ARG GROUP_ID
+ARG WORKSPACE_DIR=/workspace
 
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
+ENV WORKSPACE_DIR=${WORKSPACE_DIR}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -35,11 +37,11 @@ RUN existing_user=$(getent passwd ${USER_ID} | cut -d: -f1); \
     fi
 
 
-RUN mkdir -p /workspace
+RUN mkdir -p "${WORKSPACE_DIR}"
 # precreate directory where we mount the volume for opencode and setup permissions for the dev user
 # otherwise the directory will be created by root when mounting and the dev user won't have permissions to write to it
 RUN mkdir -p /home/dev/.local/share
-RUN chown -R ${USER_ID}:${GROUP_ID} /workspace /home/dev/.local
+RUN chown -R ${USER_ID}:${GROUP_ID} "${WORKSPACE_DIR}" /home/dev/.local
 
 RUN curl https://mise.run | sh
 
@@ -62,5 +64,5 @@ RUN chmod +x /entrypoint.sh
 
 # Run as root so entrypoint can start squid and configure iptables,
 # then switches to the dev user via gosu before starting opencode.
-WORKDIR /workspace
+WORKDIR ${WORKSPACE_DIR}
 ENTRYPOINT ["/entrypoint.sh"]

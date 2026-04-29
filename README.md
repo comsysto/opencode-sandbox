@@ -86,7 +86,7 @@ Starts the sandbox for the current project. Each invocation creates a fresh cont
 
 - Sources `opencode-sandbox-pre-start-container.sh` from the project root, if it exists (see [Hooks](#hooks))
 - Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config.yaml`)
-- Mounts your project root as `/workspace` inside the container
+- Mounts your project root as `/<project-name>` inside the container (e.g. a project at `/home/user/my-project` is mounted at `/my-project`)
 - Exposes OpenCode on `http://127.0.0.1:4096`
 - Press `Ctrl+C` to stop and remove the container
 
