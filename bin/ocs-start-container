@@ -103,8 +103,39 @@ echo ""
 echo "---"
 echo ""
 
+# Resolve --add-host flag for docker.host.
+# Docker supports the 'host-gateway' alias directly. Podman may not have a
+# bridge gateway IP available (e.g. rootless mode with slirp4netns), so the
+# host IP must be resolved explicitly from the Podman network configuration
+# or the host machine's default route.
+if [[ "${CONTAINER_RUNTIME}" == "docker" ]]; then
+  add_host_arg="--add-host=docker.host:host-gateway"
+else
+  _host_ip=""
+  # Try the default Podman bridge network first
+  _host_ip="$("${CONTAINER_RUNTIME}" network inspect podman 2>/dev/null \
+    | grep -oE '"gateway":[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' \
+    | head -1)"
+  # Fall back to the host machine's default route gateway
+  if [[ -z "${_host_ip}" ]]; then
+    if command -v ip >/dev/null 2>&1; then
+      _host_ip="$(ip -4 route show default 2>/dev/null | awk 'NR==1{print $3}')"
+    elif command -v route >/dev/null 2>&1; then
+      _host_ip="$(route -n get default 2>/dev/null | awk '/gateway:/{print $2}')"
+    fi
+  fi
+  if [[ -n "${_host_ip}" ]]; then
+    add_host_arg="--add-host=docker.host:${_host_ip}"
+  else
+    echo "WARNING: Could not determine host gateway IP for Podman." >&2
+    echo "         docker.host will not be resolvable inside the container." >&2
+    add_host_arg=""
+  fi
+fi
+
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
-  --add-host=docker.host:host-gateway \
+  ${add_host_arg:+"${add_host_arg}"} \
   --name "${SANDBOX_NAME}" \
   -p "${LOCALHOST}:${PORT}:4096" \
   -v "${ROOT_DIR}:/workspace" \

@@ -19,6 +19,7 @@ RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
 
 RUN if ! getent passwd ${USER_ID} > /dev/null 2>&1; then \
     useradd -m -l -u ${USER_ID} -g ${GROUP_ID} --shell /bin/bash dev \
+;fi
 RUN existing_group=$(getent group ${GROUP_ID} | cut -d: -f1); \
     if [ -z "${existing_group}" ]; then \
       groupadd -g ${GROUP_ID} dev; \
