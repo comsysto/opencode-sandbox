@@ -13,6 +13,18 @@ opencode-sandbox uses [mise](https://mise.jdx.dev/) to manage software inside th
 
 ---
 
+## Compatibility
+
+The following setups have been tested. Other combinations will most likely work too — if you try one, please [report your experience](https://github.com/comsysto/opencode-sandbox/issues).
+
+| Host OS | Container Runtime | Status |
+|---------|------------------|--------|
+| macOS   | Kolima           | ✅ Tested |
+| macOS   | Podman           | ✅ Tested |
+| Linux   | Docker           | ✅ Tested |
+
+---
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)
