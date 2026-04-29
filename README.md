@@ -27,7 +27,7 @@ The following setups have been tested. Other combinations will most likely work 
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/)
+- A Docker-compatible container runtime (e.g. [Docker](https://docs.docker.com/get-docker/), [Podman](https://podman.io/), [Kolima](https://kolima.io/))
 - [opencode](https://opencode.ai/) if you want to use opencode via a local terminal client instead of the web UI (optional, but recommended for a seamless experience)
 
 ---
