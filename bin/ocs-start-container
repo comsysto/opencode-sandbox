@@ -112,12 +112,23 @@ if [[ "${CONTAINER_RUNTIME}" == "docker" ]]; then
   add_host_arg="--add-host=docker.host:host-gateway"
 else
   _host_ip=""
-  # Try the default Podman bridge network first
-  _host_ip="$("${CONTAINER_RUNTIME}" network inspect podman 2>/dev/null \
-    | grep -oE '"gateway":[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' \
-    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' \
-    | head -1)"
-  # Fall back to the host machine's default route gateway
+  # For Podman with a VM (macOS, user-mode networking via gvproxy):
+  # host.containers.internal resolves to the gvproxy special address (192.168.127.254)
+  # which forwards connections to localhost on the Mac host.
+  # 192.168.127.1 (the VM's default route) is NOT reachable — gvproxy does not
+  # proxy connections to that address.
+  if "${CONTAINER_RUNTIME}" machine inspect >/dev/null 2>&1; then
+    _host_ip="$("${CONTAINER_RUNTIME}" machine ssh \
+      "getent hosts host.containers.internal 2>/dev/null | awk '{print \$1; exit}'" 2>/dev/null)"
+  fi
+  # Fall back to the Podman bridge network gateway (non-VM / Linux hosts)
+  if [[ -z "${_host_ip}" ]]; then
+    _host_ip="$("${CONTAINER_RUNTIME}" network inspect podman 2>/dev/null \
+      | grep -oE '"gateway":[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' \
+      | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' \
+      | head -1)"
+  fi
+  # Last resort: host machine's default route gateway
   if [[ -z "${_host_ip}" ]]; then
     if command -v ip >/dev/null 2>&1; then
       _host_ip="$(ip -4 route show default 2>/dev/null | awk 'NR==1{print $3}')"

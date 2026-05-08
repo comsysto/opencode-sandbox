@@ -17,17 +17,17 @@ opencode-sandbox uses [mise](https://mise.jdx.dev/) to manage software inside th
 
 The following setups have been tested. Other combinations will most likely work too — if you try one, please [report your experience](https://github.com/comsysto/opencode-sandbox/issues).
 
-| Host OS | Container Runtime | Status |
-|---------|------------------|--------|
-| macOS   | Kolima           | ✅ Tested |
-| macOS   | Podman           | ✅ Tested |
-| Linux   | Docker           | ✅ Tested |
+| Host OS | Container Runtime | Status   |
+|---------|-------------------|----------|
+| macOS   | Colima            | ✅ Tested |
+| macOS   | Podman            | ✅ Tested |
+| Linux   | Docker            | ✅ Tested |
 
 ---
 
 ## Prerequisites
 
-- A Docker-compatible container runtime (e.g. [Docker](https://docs.docker.com/get-docker/), [Podman](https://podman.io/), [Kolima](https://kolima.io/))
+- A Docker-compatible container runtime (e.g. [Docker](https://docs.docker.com/get-docker/), [Podman](https://podman.io/), [Colima](https://colima.run/))
 - [opencode](https://opencode.ai/) if you want to use opencode via a local terminal client instead of the web UI (optional, but recommended for a seamless experience)
 
 ---
@@ -177,8 +177,8 @@ env:
 - When in doubt, use the leading-dot form to avoid hard-to-debug connection failures
 
 **`host-ports`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
-- Use this for databases and other non-HTTP services running on the host or in another Docker container
-- The host is reachable via `docker.host` (injected automatically at container start)
+- Use this for databases, local dev servers, and other services running on the host
+- The host is reachable via `docker.host` (injected automatically at container start) — use this hostname instead of `localhost`
 
 **`env-passthrough`** — host environment variables to forward into the container:
 - Format is `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
