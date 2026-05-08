@@ -79,8 +79,7 @@ Interactively creates (each step skipped if already present, default answer is y
 2. `opencode-sandbox-config.yaml` — YAML config pre-filled with `sandbox-name` (set to the project directory name) and controls for outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
 3. `opencode.jsonc` — OpenCode model, provider, and permission config
 4. `opencode-sandbox-pre-start-container.sh` — empty hook script sourced before the container starts (see [Hooks](#hooks))
-5. `.gitignore` marker entry
-6. Builds the Docker container image
+5. Builds the Docker container image
 
 ### `ocs-rebuild-container`
 

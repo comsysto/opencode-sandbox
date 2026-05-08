@@ -1,10 +1,12 @@
 # opencode-sandbox configuration
 # Changes require a container rebuild: ocs-rebuild-container
 
-# Unique name for this project's container and state directory.
-# Set automatically by ocs-init (basename + short path hash). You may rename it,
-# but a rebuild is required and the old state directory in ~/.opencode-sandbox/ will be orphaned.
-sandbox-name: my-project-000000
+# Unique name for this project (required).
+# Set automatically by ocs-init to the project directory basename.
+# At runtime, combined with a short hash of the project root path to form SANDBOX_ID,
+# which is used for the container/image name and the state directory (~/.opencode-sandbox/<SANDBOX_ID>/).
+# You may rename it, but a rebuild is required and the old state directory will be orphaned.
+sandbox-name: my-project
 
 # Outbound HTTP/HTTPS domains allowed via the proxy.
 # A leading dot matches the domain and all its subdomains.
@@ -29,7 +31,7 @@ host-ports:
   # - 27017
 
 # Host env vars forwarded into the container.
-# Both key and value are required: CONTAINER_NAME: HOST_NAME
+# Both key and value are required: CONTAINER_VAR: HOST_VAR
 env-passthrough:
   # ANTHROPIC_API_KEY: ANTHROPIC_API_KEY
   # OPENAI_API_KEY: OPENAI_API_KEY

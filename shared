@@ -16,9 +16,12 @@ refresh_root_paths() {
   local sandbox_name=""
   if [[ -f "${CONFIG_FILE}" ]]; then
     while IFS= read -r line || [[ -n "${line}" ]]; do
-      # Match top-level key: no leading whitespace, key is "sandbox-name"
-      if [[ "${line}" =~ ^sandbox-name:[[:space:]]+(.+)$ ]]; then
+      # Match top-level key: no leading whitespace, key is "sandbox-name", space optional
+      if [[ "${line}" =~ ^sandbox-name:[[:space:]]*([^#[:space:]][^#]*) ]]; then
+        # Trim trailing whitespace and inline comments from captured value
         sandbox_name="${BASH_REMATCH[1]}"
+        sandbox_name="${sandbox_name%%#*}"
+        sandbox_name="${sandbox_name%"${sandbox_name##*[! ]}"}"
         break
       fi
     done < "${CONFIG_FILE}"
@@ -42,11 +45,23 @@ refresh_root_paths() {
     return 0
   fi
 
-  # Compute SANDBOX_ID: combine sandbox-name with a short hash of the project root
-  # directory path (derived from the config file location). This makes the ID unique
-  # per checkout location so multiple checkouts of the same repo never collide.
+  # Validate sandbox-name for Docker naming rules: lowercase letters, digits, hyphens only.
+  if [[ ! "${sandbox_name}" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$ ]]; then
+    echo "ERROR: 'sandbox-name' value '${sandbox_name}' in ${CONFIG_FILE} is not valid." >&2
+    echo "  Docker requires names to contain only lowercase letters, digits, and hyphens," >&2
+    echo "  and must start and end with a letter or digit." >&2
+    echo "  Example: sandbox-name: my-project" >&2
+    return 1
+  fi
+
+  # Compute SANDBOX_ID: combine sandbox-name with a short hash of the physical project root
+  # path. Using realpath ensures symlinks don't produce different IDs for the same checkout.
   local config_dir
-  config_dir="$(cd "$(dirname "${CONFIG_FILE}")" && pwd)"
+  if command -v realpath >/dev/null 2>&1; then
+    config_dir="$(realpath "$(dirname "${CONFIG_FILE}")")"
+  else
+    config_dir="$(cd "$(dirname "${CONFIG_FILE}")" && pwd -P)"
+  fi
   local dir_hash dir_hash_hex
   dir_hash="$(printf '%s' "${config_dir}" | cksum | cut -d' ' -f1)"
   dir_hash_hex="$(printf '%x' "${dir_hash}")"

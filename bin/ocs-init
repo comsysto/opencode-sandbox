@@ -33,7 +33,7 @@ confirm() {
 
 # --- mise.toml ---
 MISE_FILE="${TARGET_DIR}/mise.toml"
-echo "Step 1/4: Write a minimal mise.toml (opencode only) to ${MISE_FILE}."
+echo "Step 1/5: Write a minimal mise.toml (opencode only) to ${MISE_FILE}."
 echo "  This file tells mise which version of opencode to install in the container."
 if [[ -f "${MISE_FILE}" ]]; then
   echo "  Already exists — skipping."
@@ -50,7 +50,7 @@ echo ""
 # --- opencode-sandbox-config (required) ---
 CONFIG_FILE="${TARGET_DIR}/opencode-sandbox-config.yaml"
 CONFIG_TEMPLATE="${SANDBOX_HOME}/init-templates/opencode-sandbox-config.yaml"
-echo "Step 2/4: Create ${CONFIG_FILE} from template (required)."
+echo "Step 2/5: Create ${CONFIG_FILE} from template (required)."
 echo "  This file controls outbound proxy access, host port access, and which"
 echo "  host environment variables are forwarded into the container."
 if [[ -f "${CONFIG_FILE}" ]]; then
@@ -77,7 +77,7 @@ echo ""
 # --- opencode.jsonc ---
 JSONC_FILE="${TARGET_DIR}/opencode.jsonc"
 JSONC_SOURCE="${SANDBOX_HOME}/init-templates/opencode.jsonc"
-echo "Step 3/4: Copy opencode.jsonc from the sandbox home to ${JSONC_FILE}."
+echo "Step 3/5: Copy opencode.jsonc from the sandbox home to ${JSONC_FILE}."
 echo "  This file configures the OpenCode model, provider, and permission policy."
 if [[ -f "${JSONC_FILE}" ]]; then
   echo "  Already exists — skipping."
@@ -93,7 +93,7 @@ echo ""
 
 # --- opencode-sandbox-pre-start-container.sh ---
 HOOK_FILE="${TARGET_DIR}/opencode-sandbox-pre-start-container.sh"
-echo "Step 4/4: Create ${HOOK_FILE}."
+echo "Step 4/5: Create ${HOOK_FILE}."
 echo "  This script is sourced by ocs-start-container before the container starts."
 echo "  Use it to export env vars at start time (e.g. refresh AWS credentials)."
 if [[ -f "${HOOK_FILE}" ]]; then
@@ -110,7 +110,7 @@ fi
 echo ""
 
 # --- rebuild the container ---
-echo "Step 4/4: Build the Docker container image for this project."
+echo "Step 5/5: Build the Docker container image for this project."
 echo "  This compiles the image using the Dockerfile in the sandbox home and"
 echo "  copies the mise.toml into the container build context."
 if confirm "  Run ocs-rebuild-container?"; then
