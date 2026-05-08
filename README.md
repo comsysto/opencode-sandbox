@@ -277,3 +277,9 @@ Each project gets its own isolated container named `opencode-sandbox-<SANDBOX_ID
 OpenCode state (including session history, configuration, and cache) is persisted across container restarts by mounting `~/.opencode-sandbox/<SANDBOX_ID>/opencode-state/` as `/home/dev/.local/share/opencode` inside the container.
 
 Aside from the initial project setup files that `ocs-init` copies into the project root, opencode-sandbox writes its runtime/build artifacts and persistent sandbox state under `~/.opencode-sandbox/<SANDBOX_ID>/`, not in the project directory — so no `.gitignore` entries are needed for sandbox state.
+
+---
+
+## Remarks
+
+OpenCode Sandbox is not built by the OpenCode team and is not affiliated with OpenCode.
