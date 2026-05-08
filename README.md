@@ -177,8 +177,8 @@ env:
 - When in doubt, use the leading-dot form to avoid hard-to-debug connection failures
 
 **`host-ports`** — TCP ports on the host machine the container may connect to directly (bypasses the proxy):
-- Use this for databases and other non-HTTP services running on the host or in another Docker container
-- The host is reachable via `docker.host` (injected automatically at container start)
+- Use this for databases, local dev servers, and other services running on the host
+- The host is reachable via `docker.host` (injected automatically at container start) — use this hostname instead of `localhost`
 
 **`env-passthrough`** — host environment variables to forward into the container:
 - Format is `CONTAINER_NAME: HOST_NAME` — use the same name on both sides for a simple passthrough, or different names to rename
