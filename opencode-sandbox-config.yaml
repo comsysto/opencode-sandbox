@@ -1,6 +1,8 @@
 # opencode-sandbox configuration
 # Changes require a container rebuild: ocs-rebuild-container
 
+sandbox-name: opencode-sandbox
+
 # Outbound HTTP/HTTPS domains allowed via the proxy.
 # A leading dot matches the domain and all its subdomains.
 http-domain-whitelist:

@@ -19,8 +19,9 @@ fi
 
 cleanup() {
   echo
-  echo "Stopping Container ${SANDBOX_NAME}..."
-  "${CONTAINER_RUNTIME}" stop "${SANDBOX_NAME}" >/dev/null 2>&1 || true
+  # shellcheck disable=SC2153  # CONTAINER_NAME is defined in shared
+  echo "Stopping Container ${CONTAINER_NAME}..."
+  "${CONTAINER_RUNTIME}" stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 }
 
 trap cleanup INT TERM
@@ -32,16 +33,16 @@ if [[ ! -f "${OPENCODE_PASSWORD_FILE}" || ! -f "${MISE_CONFIG_SANDBOX_FILE}" ]];
   exit 1
 fi
 
-if ! "${CONTAINER_RUNTIME}" image inspect "${SANDBOX_NAME}" >/dev/null 2>&1; then
-  echo "Container image ${SANDBOX_NAME} is not available locally."
+if ! "${CONTAINER_RUNTIME}" image inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
+  echo "Container image ${CONTAINER_NAME} is not available locally."
   echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container first."
   exit 1
 fi
 
-echo "Starting container ${SANDBOX_NAME}..."
+echo "Starting container ${CONTAINER_NAME}..."
 echo ""
 
-# Build -e flags from env-passthrough.txt (format: CONTAINER_NAME=HOST_NAME)
+# Build -e flags from env-passthrough.txt (format: CONTAINER_VAR=HOST_VAR, both are variable names)
 env_flags=()
 env_log=()
 ENV_PASSTHROUGH_FILE="${OPENCODE_SANDBOX_DIR}/env-passthrough.txt"
@@ -68,8 +69,8 @@ if [[ -f "${ENV_STATIC_FILE}" ]]; then
 fi
 
 # Print full config summary before handing off to docker
-# shellcheck disable=SC2153  # PORT and LOCALHOST are defined in shared
-echo "   sandbox:   ${SANDBOX_NAME}"
+# shellcheck disable=SC2153  # PORT, LOCALHOST, and CONTAINER_NAME are defined in shared
+echo "   container: ${CONTAINER_NAME}"
 # shellcheck disable=SC2153
 echo "   url:       http://${LOCALHOST}:${PORT}"
 echo "   workspace: ${ROOT_DIR}"
@@ -147,12 +148,12 @@ fi
 
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
   ${add_host_arg:+"${add_host_arg}"} \
-  --name "${SANDBOX_NAME}" \
+  --name "${CONTAINER_NAME}" \
   -p "${LOCALHOST}:${PORT}:4096" \
   -v "${ROOT_DIR}:/$(basename "${ROOT_DIR}")" \
   -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
   "${env_flags[@]+"${env_flags[@]}"}" \
-  "${SANDBOX_NAME}"
+  "${CONTAINER_NAME}"
 
 
 

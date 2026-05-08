@@ -58,7 +58,15 @@ if [[ -f "${CONFIG_FILE}" ]]; then
 else
   if confirm "  Create opencode-sandbox-config.yaml from template?"; then
     cp "${CONFIG_TEMPLATE}" "${CONFIG_FILE}"
-    echo "  ✓ Created."
+    # Inject sandbox-name: use the directory basename as the human-readable project label.
+    # Uniqueness across multiple checkouts is handled at runtime via SANDBOX_ID in shared.
+    PROJECT_NAME="$(basename "${TARGET_DIR}")"
+    # Prepend sandbox-name as the first entry in the config file
+    TEMP_FILE="$(mktemp)"
+    printf 'sandbox-name: %s\n\n' "${PROJECT_NAME}" > "${TEMP_FILE}"
+    cat "${CONFIG_FILE}" >> "${TEMP_FILE}"
+    mv "${TEMP_FILE}" "${CONFIG_FILE}"
+    echo "  ✓ Created (sandbox-name: ${PROJECT_NAME})."
   else
     echo "  This file is required. Aborting initialization."
     exit 1
@@ -105,8 +113,7 @@ echo ""
 # --- .gitignore ---
 GITIGNORE_FILE="${TARGET_DIR}/.gitignore"
 GITIGNORE_BLOCK_MARKER="# opencode-sandbox"
-echo "Step 5/6: Add sandbox-local entries to ${GITIGNORE_FILE}."
-echo "  These paths contain generated state that must not be committed."
+echo "Step 5/6: Add sandbox entries to ${GITIGNORE_FILE}."
 echo "  NOTE: opencode-sandbox-pre-start-container.sh is intentionally NOT added —"
 echo "  you control whether it is committed or gitignored based on whether it contains secrets."
 if [[ -f "${GITIGNORE_FILE}" ]]; then
@@ -114,7 +121,7 @@ if [[ -f "${GITIGNORE_FILE}" ]]; then
     echo "  Entries already present — skipping."
   else
     if confirm "  Append opencode entries to existing .gitignore?"; then
-      printf '\n%s\n.opencode-sandbox/\n' "${GITIGNORE_BLOCK_MARKER}" >> "${GITIGNORE_FILE}"
+      printf '\n%s\n' "${GITIGNORE_BLOCK_MARKER}" >> "${GITIGNORE_FILE}"
       echo "  ✓ Appended."
     else
       echo "  Skipped."
@@ -122,7 +129,7 @@ if [[ -f "${GITIGNORE_FILE}" ]]; then
   fi
 else
   if confirm "  No .gitignore found. Create one with opencode entries?"; then
-    printf '%s\n.opencode-sandbox/\n' "${GITIGNORE_BLOCK_MARKER}" > "${GITIGNORE_FILE}"
+    printf '%s\n' "${GITIGNORE_BLOCK_MARKER}" > "${GITIGNORE_FILE}"
     echo "  ✓ Created."
   else
     echo "  Skipped."

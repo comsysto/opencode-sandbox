@@ -1,6 +1,11 @@
 # opencode-sandbox configuration
 # Changes require a container rebuild: ocs-rebuild-container
 
+# Unique name for this project's container and state directory.
+# Set automatically by ocs-init (basename + short path hash). You may rename it,
+# but a rebuild is required and the old state directory in ~/.opencode-sandbox/ will be orphaned.
+sandbox-name: my-project-000000
+
 # Outbound HTTP/HTTPS domains allowed via the proxy.
 # A leading dot matches the domain and all its subdomains.
 http-domain-whitelist:

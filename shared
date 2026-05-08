@@ -9,22 +9,56 @@ ROOT_DIR="$(pwd)"
 
 refresh_root_paths() {
   ROOT_DIR="${1:?root directory is required}"
-  OPENCODE_SANDBOX_DIR="${ROOT_DIR}/.opencode-sandbox"
+  CONFIG_FILE="${ROOT_DIR}/opencode-sandbox-config.yaml"
+  MISE_CONFIG_ROOT_FILE="${ROOT_DIR}/mise.toml"
+
+  # Read sandbox-name from opencode-sandbox-config.yaml
+  local sandbox_name=""
+  if [[ -f "${CONFIG_FILE}" ]]; then
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+      # Match top-level key: no leading whitespace, key is "sandbox-name"
+      if [[ "${line}" =~ ^sandbox-name:[[:space:]]+(.+)$ ]]; then
+        sandbox_name="${BASH_REMATCH[1]}"
+        break
+      fi
+    done < "${CONFIG_FILE}"
+  fi
+
+  if [[ -z "${sandbox_name}" ]]; then
+    if [[ -f "${CONFIG_FILE}" ]]; then
+      echo "ERROR: 'sandbox-name' is not set in ${CONFIG_FILE}" >&2
+      echo "  Add a top-level entry to the file, e.g.:" >&2
+      echo "    sandbox-name: my-project" >&2
+      echo "  Run ocs-init to regenerate the config with a sandbox name if needed." >&2
+      return 1
+    fi
+    # Config file absent (e.g. during ocs-init before config is created) — leave paths unset
+    SANDBOX_ID=""
+    CONTAINER_NAME=""
+    OPENCODE_SANDBOX_DIR=""
+    OPENCODE_PASSWORD_FILE=""
+    MISE_CONFIG_SANDBOX_FILE=""
+    OPENCODE_STATE_DIR=""
+    return 0
+  fi
+
+  # Compute SANDBOX_ID: combine sandbox-name with a short hash of the project root
+  # directory path (derived from the config file location). This makes the ID unique
+  # per checkout location so multiple checkouts of the same repo never collide.
+  local config_dir
+  config_dir="$(cd "$(dirname "${CONFIG_FILE}")" && pwd)"
+  local dir_hash dir_hash_hex
+  dir_hash="$(printf '%s' "${config_dir}" | cksum | cut -d' ' -f1)"
+  dir_hash_hex="$(printf '%x' "${dir_hash}")"
+  SANDBOX_ID="${sandbox_name}-${dir_hash_hex:0:6}"
+
+  CONTAINER_NAME="opencode-sandbox-${SANDBOX_ID}"
+  OPENCODE_SANDBOX_DIR="${HOME}/.opencode-sandbox/${SANDBOX_ID}"
 
   # File paths
   OPENCODE_PASSWORD_FILE="${OPENCODE_SANDBOX_DIR}/opencode-password"
-  MISE_CONFIG_ROOT_FILE="${ROOT_DIR}/mise.toml"
   MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
-  CONTAINER_NAME_FILE="${OPENCODE_SANDBOX_DIR}/container-name"
   OPENCODE_STATE_DIR="${OPENCODE_SANDBOX_DIR}/opencode-state"
-  CONFIG_FILE="${ROOT_DIR}/opencode-sandbox-config.yaml"
-
-  # Container name: read from file if present, otherwise derive from project directory name
-  if [[ -f "${CONTAINER_NAME_FILE}" ]]; then
-    SANDBOX_NAME="$(cat "${CONTAINER_NAME_FILE}")"
-  else
-    SANDBOX_NAME="opencode-$(basename "${ROOT_DIR}")"
-  fi
 }
 
 find_sandbox_root() {
@@ -33,7 +67,7 @@ find_sandbox_root() {
   dir="$(pwd)"
 
   while [[ "${dir}" != "/" ]]; do
-    if [[ -d "${dir}/.opencode-sandbox" ]]; then
+    if [[ -f "${dir}/opencode-sandbox-config.yaml" ]]; then
       printf '%s\n' "${dir}"
       return 0
     fi
@@ -41,7 +75,7 @@ find_sandbox_root() {
     dir="$(dirname "${dir}")"
   done
 
-  if [[ -d "/.opencode-sandbox" ]]; then
+  if [[ -f "/opencode-sandbox-config.yaml" ]]; then
     printf '/\n'
     return 0
   fi
@@ -53,8 +87,8 @@ use_sandbox_root() {
   local detected_root
 
   detected_root="$(find_sandbox_root)" || {
-    echo "No .opencode-sandbox directory found in the current directory or any parent directory of $(pwd)." >&2
-    echo "Run ${SANDBOX_HOME}/bin/ocs-rebuild-container from your project root first." >&2
+    echo "No opencode-sandbox-config.yaml found in the current directory or any parent directory of $(pwd)." >&2
+    echo "Run ocs-init from your project root to initialize the sandbox first." >&2
     return 1
   }
 
