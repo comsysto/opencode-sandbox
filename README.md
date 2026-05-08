@@ -175,7 +175,7 @@ env:
 
 **`sandbox-name`** — human-readable project identifier (required):
 - Committed to the repository as a stable label for the project
-- At runtime, combined with a short hash of the absolute project root path to form `SANDBOX_ID` (e.g. `my-project-a3f92c`), ensuring multiple checkouts of the same repo never collide
+- At runtime, combined with a short hash of the absolute project root path to form `SANDBOX_ID` (e.g. `my-project-a3f92c`), making collisions between multiple checkouts of the same repo unlikely
 - `SANDBOX_ID` is used as the Docker image/container name (`opencode-sandbox-<SANDBOX_ID>`) and as the state directory name (`~/.opencode-sandbox/<SANDBOX_ID>/`)
 - Set automatically by `ocs-init` using the directory basename
 - You may rename it, but a rebuild is required and the old state directory in `~/.opencode-sandbox/` will be orphaned
