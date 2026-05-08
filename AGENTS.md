@@ -14,7 +14,8 @@ This project uses itself as its own sandbox — the AI agent runs **inside the o
 - Outbound network access is restricted to the domains whitelisted in `opencode-sandbox-config.yaml`
 - Host environment variables are forwarded as configured in the `env-passthrough` section — in particular `GH_TOKEN` for GitHub CLI access
 - `docker` and `podman` are **not available** inside the container — `ocs-rebuild-container` and `ocs-start-container` cannot be run here; ask the user to run them on the host
-- The `gh` CLI is available and authenticated via `GH_TOKEN`
+- The `gh` CLI is available and authenticated via `GH_TOKEN` for reading and commenting on PRs and issues, but **not** for pushing code or creating branches — do not attempt `git push` or `git fetch`
+- SSH is not available inside the container — `git push` and `git fetch` will fail; do not modify `git remote` URLs
 - `shellcheck` is available for linting
 
 ## Lint (only CI-equivalent check)
