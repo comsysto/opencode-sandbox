@@ -13,7 +13,9 @@ This project uses itself as its own sandbox — the AI agent runs **inside the o
 - The workspace is mounted at `/<project-name>` inside the container (derived from the host project directory name)
 - Outbound network access is restricted to the domains whitelisted in `opencode-sandbox-config.yaml`
 - Host environment variables are forwarded as configured in the `env-passthrough` section — in particular `GH_TOKEN` for GitHub CLI access
-- `docker` and `podman` are **not available** inside the container — `ocs-rebuild-container` and `ocs-start-container` cannot be run here; ask the user to run them on the host
+- `docker` CLI is available inside the container (installed via `mise.toml`) and communicates with the **host Docker daemon** via the mounted socket (`docker-in-docker: true`) — containers it creates are siblings on the host, not nested children; bind-mount paths in `docker run -v` must use host-side absolute paths
+- `podman` is **not available** inside the container
+- `ocs-rebuild-container` and `ocs-start-container` cannot be run here (they manage the sandbox container itself from the host) — ask the user to run them on the host
 - The `gh` CLI is available and authenticated via `GH_TOKEN` for reading and commenting on PRs and issues, but **not** for pushing code or creating branches — do not attempt `git push` or `git fetch`
 - SSH is not available inside the container — `git push` and `git fetch` will fail; do not modify `git remote` URLs
 - `shellcheck` is available for linting
@@ -42,10 +44,15 @@ No tests, no formatter, no typecheck, no CI workflows.
 The config file uses a YAML subset deliberately chosen to be parseable without any external dependencies. No `yq`, `python`, or other tools are required on the host.
 
 The supported subset is intentionally narrow:
-- Top-level keys only (section headers): `key:`
+- Top-level scalar values: `key: value` (no leading whitespace, has a value)
+- Top-level section headers: `key:` (no leading whitespace, no value)
 - List items one level deep: `  - value`
 - Map entries one level deep: `  key: value`
 - Line comments (`#`) and blank lines
+
+The parser distinguishes scalars from section headers by whether a value is present after the colon. A top-level scalar clears the current section context; entries that follow it are not attributed to any section until the next section header appears.
+
+To add a new top-level scalar: declare a `cfg_<name>` variable before the parse loop, add a `case` arm inside the loop, and add the corresponding behaviour in the "Post-parse: apply scalar flags" block after the loop.
 
 Anything outside this subset — anchors, multi-line strings, nested structures, typed values — is silently ignored by the parser in `ocs-rebuild-container`. Do not add configuration that relies on YAML features beyond the above. If richer configuration is ever needed, switch to a proper YAML parser (`yq`) rather than extending the bash parser.
 

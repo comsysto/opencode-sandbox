@@ -2,3 +2,4 @@
 "github:anomalyco/opencode" = "latest"
 shellcheck = "latest"
 github-cli = "2.91.0"
+"aqua:docker/cli" = "latest"
