@@ -3,12 +3,20 @@ set -euo pipefail
 
 # Source common configuration
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/../shared"
 
 use_sandbox_root
 print_sandbox_dir
 
-
-OPENCODE_SERVER_PASSWORD="$(cat "${OPENCODE_PASSWORD_FILE}")" opencode attach "http://${LOCALHOST}:${PORT}" "$@"
-
+# Run opencode attach via the user's login shell so that PATH is set up the
+# same way as in an interactive terminal session. Without this, non-interactive
+# scripts on macOS get a minimal PATH that may resolve `opencode` to the
+# Electron desktop-app binary (e.g. from a mise install) instead of the CLI.
+login_shell="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{print $2}')"
+login_shell="${login_shell:-${SHELL:-/bin/zsh}}"
+OPENCODE_SERVER_PASSWORD="$(cat "${OPENCODE_PASSWORD_FILE}")"
+export OPENCODE_SERVER_PASSWORD
+# shellcheck disable=SC2016  # $1/$@ are intentionally evaluated by the login shell, not here
+exec "${login_shell}" -l -c 'opencode attach "$1" "${@:2}"' -- "http://${LOCALHOST}:${PORT}" "$@"
