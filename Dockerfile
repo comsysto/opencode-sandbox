@@ -12,7 +12,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update \
     && apt-get -y --no-install-recommends install \
        curl git ca-certificates build-essential \
-       squid gosu iptables iproute2 \
+       squid gosu iptables iproute2 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
