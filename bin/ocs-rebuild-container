@@ -43,19 +43,47 @@ if [[ -f "${CONFIG_FILE}" ]]; then
   HOST_PORTS="${OPENCODE_SANDBOX_DIR}/host-ports.txt"
   ENV_PASSTHROUGH="${OPENCODE_SANDBOX_DIR}/env-passthrough.txt"
   ENV_STATIC="${OPENCODE_SANDBOX_DIR}/env.txt"
+  VOLUME_MOUNTS="${OPENCODE_SANDBOX_DIR}/volume-mounts.txt"
   true > "${SQUID_WHITELIST}"
   true > "${HOST_PORTS}"
   true > "${ENV_PASSTHROUGH}"
   true > "${ENV_STATIC}"
+  true > "${VOLUME_MOUNTS}"
+
+  # ---------------------------------------------------------------------------
+  # Scalar flags — top-level "key: value" entries (not sections).
+  # Add new top-level scalars here; their values are set during the parse loop.
+  # ---------------------------------------------------------------------------
+  cfg_docker_in_docker="false"
+
   section=""
   while IFS= read -r line || [[ -n "${line}" ]]; do
     # Skip blank lines and comment lines (trimmed)
     trimmed="${line#"${line%%[![:space:]]*}"}"
     [[ -z "${trimmed}" || "${trimmed}" == "#"* ]] && continue
-    # Top-level section header: "key:" with no value and no leading whitespace
-    if [[ "${line}" =~ ^([a-z-]+):$ ]]; then
-      section="${BASH_REMATCH[1]}"; continue
+
+    # Top-level key: no leading whitespace, matches "key:" or "key: value"
+    if [[ "${line}" =~ ^([a-z-]+):[[:space:]]*(.*) ]]; then
+      top_key="${BASH_REMATCH[1]}"
+      top_value="${BASH_REMATCH[2]}"
+      # Strip inline comments and trailing whitespace from value
+      top_value="${top_value%%#*}"
+      top_value="${top_value%"${top_value##*[! ]}"}"
+
+      if [[ -z "${top_value}" ]]; then
+        # No value — this is a section header
+        section="${top_key}"
+      else
+        # Has a value — top-level scalar; clear section context
+        section=""
+        case "${top_key}" in
+          docker-in-docker) cfg_docker_in_docker="${top_value}" ;;
+          # sandbox-name is handled by shared; other top-level scalars (e.g. sandbox-name) are intentionally ignored here
+        esac
+      fi
+      continue
     fi
+
     # List item: "  - value"
     if [[ "${line}" =~ ^[[:space:]]+-[[:space:]]+(.+)$ ]]; then
       value="${BASH_REMATCH[1]}"
@@ -65,6 +93,7 @@ if [[ -f "${CONFIG_FILE}" ]]; then
       esac
       continue
     fi
+
     # Map entry: "  key: value"
     if [[ "${line}" =~ ^[[:space:]]+([^[:space:]:]+):[[:space:]]+(.+)$ ]]; then
       key="${BASH_REMATCH[1]}"
@@ -72,14 +101,26 @@ if [[ -f "${CONFIG_FILE}" ]]; then
       case "${section}" in
         env-passthrough) echo "${key}=${value}" >> "${ENV_PASSTHROUGH}" ;;
         env)             echo "${key}=${value}" >> "${ENV_STATIC}" ;;
+        volume-mounts)   echo "${key}=${value}" >> "${VOLUME_MOUNTS}" ;;
       esac
       continue
     fi
   done < "${CONFIG_FILE}"
+
+  # ---------------------------------------------------------------------------
+  # Post-parse: apply scalar flags
+  # Add handling for new top-level scalars here.
+  # ---------------------------------------------------------------------------
+  if [[ "${cfg_docker_in_docker}" == "true" ]]; then
+    echo "/var/run/docker.sock=/var/run/docker.sock" >> "${VOLUME_MOUNTS}"
+    echo "  docker-in-docker: enabled — docker socket mount injected"
+  fi
+
   echo "  Extracted $(wc -l < "${SQUID_WHITELIST}") whitelisted domain(s) into squid-whitelist.txt"
   echo "  Extracted $(wc -l < "${HOST_PORTS}") host TCP port(s) into host-ports.txt"
   echo "  Extracted $(wc -l < "${ENV_PASSTHROUGH}") env var name(s) into env-passthrough.txt"
   echo "  Extracted $(wc -l < "${ENV_STATIC}") static env var(s) into env.txt"
+  echo "  Extracted $(wc -l < "${VOLUME_MOUNTS}") volume mount(s) into volume-mounts.txt"
 else
   echo "  Missing required config file: ${CONFIG_FILE}" >&2
   echo "  Create opencode-sandbox-config.yaml (use ocs-init template) and rebuild." >&2

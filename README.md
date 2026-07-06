@@ -99,6 +99,7 @@ Starts the sandbox for the current project. Each invocation creates a fresh cont
 - Sources `opencode-sandbox-pre-start-container.sh` from the project root, if it exists (see [Hooks](#hooks))
 - Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config.yaml`)
 - Mounts your project root as `/<dirname>` inside the container (e.g. a project at `/home/user/my-project` is mounted at `/my-project`)
+- Mounts any additional directories configured in the `volume-mounts` section of `opencode-sandbox-config.yaml`
 - Exposes OpenCode on `http://127.0.0.1:4096`
 - Press `Ctrl+C` to stop and remove the container
 
@@ -149,7 +150,7 @@ All outbound traffic is routed via the proxy automatically through the standard 
 
 ## Configuration — `opencode-sandbox-config.yaml`
 
-The `opencode-sandbox-config.yaml` file in your project root controls the project name, outbound network access, and environment variables. It is safe to commit.
+The `opencode-sandbox-config.yaml` file in your project root controls the project name, outbound network access, environment variables, and extra volume mounts. It is safe to commit.
 
 > **Note:** Only a narrow YAML subset is supported: top-level keys, one-level-deep list items (`- value`), and one-level-deep map entries (`key: value`). Anchors, multi-line strings, nested structures, and other YAML features are not supported.
 
@@ -171,6 +172,11 @@ env-passthrough:
 
 env:
   GITHUB_REPOSITORY: my-org/my-repo
+
+volume-mounts:
+  /shared-data: /home/user/shared-data
+
+# docker-in-docker: true
 ```
 
 **`sandbox-name`** — human-readable project identifier (required):
@@ -200,7 +206,70 @@ env:
 - Values are literal — no shell expansion
 - A rebuild is required after adding or removing entries
 
+**`volume-mounts`** — additional host directories to mount into the container:
+- Format is `CONTAINER_DIR: HOST_DIR` — both paths must be absolute
+- Use this to give OpenCode access to directories outside the project root (e.g. shared data, local package caches, credential files)
+- The host path is mounted read-write; use with care as OpenCode can modify the contents
+- A rebuild is required after adding or removing entries
+
+**`docker-in-docker`** — mount the host Docker socket into the container, allowing OpenCode to build and run containers:
+- Set to `true` to enable; omit or set to `false` to disable
+- When enabled, `/var/run/docker.sock` is automatically mounted into the container — no manual `volume-mounts` entry needed
+- The container entrypoint dynamically creates a `docker` group matching the socket's GID at startup, so the `dev` user can access the socket regardless of host OS or runtime (Colima, Podman, Docker Desktop, etc.)
+- A rebuild is required after changing this setting
+
+```yaml
+docker-in-docker: true
+```
+
+> **Note:** Enabling `docker-in-docker` only mounts the socket — it does not install Docker CLI tooling. You must add `docker` and/or `docker-compose` to your `mise.toml` so they are available inside the container (see [Docker-in-Docker setup](#docker-in-docker-setup) below).
+
 `ocs-rebuild-container` reads this file to generate derived build artifacts — **a rebuild is required after changes**. The file is required; `ocs-rebuild-container` fails if it is missing.
+
+---
+
+## Docker-in-Docker setup
+
+To let OpenCode build and run containers, you need two things:
+
+1. **Socket access** — set `docker-in-docker: true` in `opencode-sandbox-config.yaml`
+2. **CLI tooling** — install `docker` (CLI) and optionally `docker-compose` via `mise.toml`
+
+### `opencode-sandbox-config.yaml`
+
+```yaml
+sandbox-name: my-project
+
+docker-in-docker: true
+
+http-domain-whitelist:
+  - .github.com
+  # ... other domains your project needs
+```
+
+### `mise.toml`
+
+```toml
+[tools]
+"github:anomalyco/opencode" = "latest"
+
+# Docker CLI — communicates with the host Docker daemon via the mounted socket
+"aqua:docker/cli" = "latest"
+
+# Docker Compose plugin (provides the `docker compose` subcommand)
+"aqua:docker/compose" = "latest"
+```
+
+After updating `mise.toml`, rebuild the container:
+
+```bash
+ocs-rebuild-container
+ocs-start-container
+```
+
+Once running, OpenCode can execute `docker` and `docker compose` commands that operate against the **host Docker daemon** — containers it starts are siblings on the host, not nested children. Keep this in mind when referencing mounted paths: paths must be valid on the **host**, not inside the sandbox container.
+
+> **Example:** if your project is at `/home/user/my-project` on the host, bind-mount paths in `docker run -v` commands must use that host path, not the container-internal path `/<dirname>`.
 
 ---
 
@@ -270,6 +339,7 @@ Each project gets its own isolated container named `opencode-sandbox-<SANDBOX_ID
     ├── host-ports.txt          # Extracted from host-ports at build time
     ├── env-passthrough.txt     # Extracted from env-passthrough at build time
     ├── env.txt                 # Extracted from env at build time
+    ├── volume-mounts.txt       # Extracted from volume-mounts at build time
     ├── docker-build.log        # Docker build output (created during build)
     └── opencode-state/         # Persistent OpenCode state (mounted into the container)
 ```

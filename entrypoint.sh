@@ -71,6 +71,17 @@ OPENCODE_SERVER_PASSWORD=$(cat /opencode-password)
 export OPENCODE_SERVER_PASSWORD
 
 # ---------------------------------------------------------------------------
+# Docker socket: match GID of mounted socket so dev user can access it
+# ---------------------------------------------------------------------------
+if [[ -S /var/run/docker.sock ]]; then
+  DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+  if ! getent group "${DOCKER_GID}" > /dev/null 2>&1; then
+    groupadd -g "${DOCKER_GID}" docker
+  fi
+  usermod -aG "${DOCKER_GID}" dev
+fi
+
+# ---------------------------------------------------------------------------
 # Start OpenCode as the dev user (gosu drops root, env is inherited)
 # ---------------------------------------------------------------------------
 echo ">> start opencode"

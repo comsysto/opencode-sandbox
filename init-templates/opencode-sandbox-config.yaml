@@ -40,3 +40,13 @@ env-passthrough:
 # Static env vars set in the container. Safe to commit — no secrets here.
 env:
   # GITHUB_REPOSITORY: my-org/my-repo
+
+# Additional directories to mount into the container.
+# Format: CONTAINER_DIR: HOST_DIR
+# Both paths must be absolute. A rebuild is required after adding or removing entries.
+volume-mounts:
+  # /shared-data: /home/user/shared-data
+
+# Enable docker-in-docker: mounts the host Docker socket into the container,
+# allowing the agent to build and run containers. Requires a rebuild.
+# docker-in-docker: true

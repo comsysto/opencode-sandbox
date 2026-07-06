@@ -39,3 +39,9 @@ env:
   GH_REPO: github.com/comsysto/opencode-sandbox
   GH_HOST: github.com
 
+volume-mounts:
+ # /test: "$HOME/test"
+
+# Enable docker-in-docker: mounts the host Docker socket into the container,
+# allowing the agent to build and run containers. Requires a rebuild.
+docker-in-docker: true

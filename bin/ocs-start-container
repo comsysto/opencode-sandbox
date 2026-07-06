@@ -68,6 +68,22 @@ if [[ -f "${ENV_STATIC_FILE}" ]]; then
   done < "${ENV_STATIC_FILE}"
 fi
 
+# Build -v flags for extra volume mounts from volume-mounts.txt (format: CONTAINER_DIR=HOST_DIR)
+volume_flags=()
+volume_log=()
+VOLUME_MOUNTS_FILE="${OPENCODE_SANDBOX_DIR}/volume-mounts.txt"
+if [[ -f "${VOLUME_MOUNTS_FILE}" ]]; then
+  while IFS= read -r entry || [[ -n "${entry}" ]]; do
+    [[ -z "${entry}" ]] && continue
+    container_dir="${entry%%=*}"
+    host_dir="${entry#*=}"
+    # Expand environment variables in the host path (e.g. $HOME, ${HOME})
+    host_dir="$(eval echo "${host_dir}")"
+    volume_flags+=(-v "${host_dir}:${container_dir}")
+    volume_log+=("    ${host_dir} -> ${container_dir}")
+  done < "${VOLUME_MOUNTS_FILE}"
+fi
+
 # Print full config summary before handing off to docker
 # shellcheck disable=SC2153  # PORT, LOCALHOST, and CONTAINER_NAME are defined in shared
 echo "   container: ${CONTAINER_NAME}"
@@ -99,6 +115,13 @@ if [[ -f "${HOST_PORTS_FILE}" ]]; then
   if [[ ! -s "${HOST_PORTS_FILE}" ]]; then
     echo "     (none)"
   fi
+fi
+echo ""
+echo "   extra volume mounts:"
+if [[ "${#volume_log[@]}" -gt 0 ]]; then
+  for entry in "${volume_log[@]}"; do echo "${entry}"; done
+else
+  echo "     (none)"
 fi
 echo ""
 echo "---"
@@ -152,6 +175,7 @@ fi
   -p "${LOCALHOST}:${PORT}:4096" \
   -v "${ROOT_DIR}:/$(basename "${ROOT_DIR}")" \
   -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
+  "${volume_flags[@]+"${volume_flags[@]}"}" \
   "${env_flags[@]+"${env_flags[@]}"}" \
   "${CONTAINER_NAME}"
 
