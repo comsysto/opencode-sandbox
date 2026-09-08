@@ -11,7 +11,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install \
-       curl git ca-certificates build-essential \
+       curl git ca-certificates build-essential python3 \
        squid gosu iptables iproute2 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
@@ -44,6 +44,9 @@ RUN mkdir -p /home/dev/.local/share
 RUN chown -R ${USER_ID}:${GROUP_ID} "${WORKSPACE_DIR}" /home/dev/.local
 
 RUN curl https://mise.run | sh
+
+# Stub out xdg-open so opencode doesn't crash trying to open a browser in a headless container
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/xdg-open && chmod +x /usr/local/bin/xdg-open
 
 RUN mkdir -p /etc/mise/
 COPY mise.toml /etc/mise/config.toml
