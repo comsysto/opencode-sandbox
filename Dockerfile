@@ -11,7 +11,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install \
-       curl git ca-certificates build-essential python3 \
+       curl git ca-certificates build-essential \
        squid gosu iptables iproute2 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
