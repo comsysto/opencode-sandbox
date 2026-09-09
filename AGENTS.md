@@ -36,6 +36,7 @@ No tests, no formatter, no typecheck, no CI workflows.
 - `ocs-rebuild-container` must run from the **project root** (where `mise.toml` lives); all other `ocs-*` commands auto-detect root by walking up
 - Container name is derived from project dir name: `opencode-<dirname>`
 - Init templates (copied into target projects by `ocs-init`) live in `init-templates/`
+- Project-specific init templates (e.g. for UCP) live in `init-templates/<project>/` — copy them manually into the target repo root, replacing `REPLACE_WITH_REPO_NAME` placeholders before running `ocs-init`
 
 ## Design decisions
 
