@@ -10,7 +10,7 @@ Every change to the user experience (new commands, changed behaviour, new files 
 
 This project uses itself as its own sandbox — the AI agent runs **inside the opencode-sandbox container** for this repository. This means:
 
-- The workspace is mounted at `/<project-name>` inside the container (derived from the host project directory name)
+- The workspace is mounted at the same full absolute path inside the container as on the host
 - Outbound network access is restricted to the domains whitelisted in `opencode-sandbox-config.yaml`
 - Host environment variables are forwarded as configured in the `env-passthrough` section — in particular `GH_TOKEN` for GitHub CLI access
 - `docker` CLI is available inside the container (installed via `mise.toml`) and communicates with the **host Docker daemon** via the mounted socket (`docker-in-docker: true`) — containers it creates are siblings on the host, not nested children; bind-mount paths in `docker run -v` must use host-side absolute paths
