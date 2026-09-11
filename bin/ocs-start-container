@@ -172,7 +172,8 @@ fi
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
   ${add_host_arg:+"${add_host_arg}"} \
   --name "${CONTAINER_NAME}" \
-  -p "${LOCALHOST}:${PORT}:4096" \
+  -e "OPENCODE_PORT=${PORT}" \
+  -p "${LOCALHOST}:${PORT}:${PORT}" \
   -v "${ROOT_DIR}:${ROOT_DIR}" \
   -v "${OPENCODE_STATE_DIR}:/home/dev/.local/share/opencode" \
   "${volume_flags[@]+"${volume_flags[@]}"}" \

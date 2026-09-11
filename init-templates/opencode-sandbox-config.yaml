@@ -8,6 +8,9 @@
 # You may rename it, but a rebuild is required and the old state directory will be orphaned.
 sandbox-name: my-project
 
+# HTTP port used by the OpenCode server and host clients.
+opencode-port: 4096
+
 # Outbound HTTP/HTTPS domains allowed via the proxy.
 # A leading dot matches the domain and all its subdomains.
 http-domain-whitelist:

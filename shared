@@ -9,6 +9,7 @@ ROOT_DIR="$(pwd)"
 
 refresh_root_paths() {
   ROOT_DIR="${1:?root directory is required}"
+  PORT=4096
   CONFIG_FILE="${ROOT_DIR}/opencode-sandbox-config.yaml"
   MISE_CONFIG_ROOT_FILE="${ROOT_DIR}/mise.toml"
 
@@ -72,8 +73,13 @@ refresh_root_paths() {
 
   # File paths
   OPENCODE_PASSWORD_FILE="${OPENCODE_SANDBOX_DIR}/opencode-password"
+  OPENCODE_PORT_FILE="${OPENCODE_SANDBOX_DIR}/opencode-port"
   MISE_CONFIG_SANDBOX_FILE="${OPENCODE_SANDBOX_DIR}/mise.toml"
   OPENCODE_STATE_DIR="${OPENCODE_SANDBOX_DIR}/opencode-state"
+
+  if [[ -f "${OPENCODE_PORT_FILE}" ]]; then
+    PORT="$(cat "${OPENCODE_PORT_FILE}")"
+  fi
 }
 
 find_sandbox_root() {
@@ -127,7 +133,6 @@ else
 fi
 
 # Network configuration
-PORT=4096
 LOCALHOST=127.0.0.1
 
 open_url() {
@@ -157,4 +162,3 @@ open_url() {
   echo "Could not find a supported browser opener. Install xdg-open or open the URL manually: ${url}" >&2
   return 1
 }
-
