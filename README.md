@@ -76,7 +76,7 @@ Initializes a target project for use with opencode-sandbox. Run once from the pr
 Interactively creates (each step skipped if already present, default answer is yes):
 
 1. `mise.toml` — minimal config with opencode only
-2. `opencode-sandbox-config.yaml` — YAML config pre-filled with `sandbox-name` (set to the project directory name) and controls for outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
+2. `opencode-sandbox-config.yaml` — YAML config pre-filled with `sandbox-name` (set to the project directory name) and `opencode-port`, plus controls for outbound HTTP/HTTPS whitelist, host TCP ports, and env var passthrough
 3. `opencode.jsonc` — OpenCode model, provider, and permission config
 4. `opencode-sandbox-pre-start-container.sh` — empty hook script sourced before the container starts (see [Hooks](#hooks))
 5. Builds the Docker container image
@@ -100,12 +100,12 @@ Starts the sandbox for the current project. Each invocation creates a fresh cont
 - Forwards whitelisted host environment variables into the container (as configured in `opencode-sandbox-config.yaml`)
 - Mounts your project root as `/<dirname>` inside the container (e.g. a project at `/home/user/my-project` is mounted at `/my-project`)
 - Mounts any additional directories configured in the `volume-mounts` section of `opencode-sandbox-config.yaml`
-- Exposes OpenCode on `http://127.0.0.1:4096`
+- Exposes OpenCode on `http://127.0.0.1:<opencode-port>` (default: `4096`)
 - Press `Ctrl+C` to stop and remove the container
 
 ### `ocs-web`
 
-Opens `http://127.0.0.1:4096` in your default browser on macOS or Linux.
+Opens `http://127.0.0.1:<opencode-port>` in your default browser on macOS or Linux.
 
 Use `ocs-web-auth` for authentication or authenticate manually in the browser when prompted:
 
@@ -150,12 +150,13 @@ All outbound traffic is routed via the proxy automatically through the standard 
 
 ## Configuration — `opencode-sandbox-config.yaml`
 
-The `opencode-sandbox-config.yaml` file in your project root controls the project name, outbound network access, environment variables, and extra volume mounts. It is safe to commit.
+The `opencode-sandbox-config.yaml` file in your project root controls the project name, OpenCode HTTP port, outbound network access, environment variables, and extra volume mounts. It is safe to commit.
 
 > **Note:** Only a narrow YAML subset is supported: top-level keys, one-level-deep list items (`- value`), and one-level-deep map entries (`key: value`). Anchors, multi-line strings, nested structures, and other YAML features are not supported.
 
 ```yaml
 sandbox-name: my-project
+opencode-port: 4096
 
 http-domain-whitelist:
   - .github.com
@@ -185,6 +186,12 @@ volume-mounts:
 - `SANDBOX_ID` is used as the Docker image/container name (`opencode-sandbox-<SANDBOX_ID>`) and as the state directory name (`~/.opencode-sandbox/<SANDBOX_ID>/`)
 - Set automatically by `ocs-init` using the directory basename
 - You may rename it, but a rebuild is required and the old state directory in `~/.opencode-sandbox/` will be orphaned
+
+**`opencode-port`** — HTTP port for the OpenCode server and host clients:
+- Defaults to `4096` when omitted
+- Must be an integer from `1` through `65535`
+- Used by the server inside the container, the host port mapping, `ocs-terminal`, `ocs-web`, and `ocs-web-auth`
+- A rebuild is required after changing this setting
 
 **`http-domain-whitelist`** — domains allowed through the Squid HTTP/HTTPS proxy:
 - A leading dot matches the domain **and** all its subdomains (e.g. `.github.com` allows `github.com`, `api.github.com`, `raw.githubusercontent.com`, etc.)
@@ -333,6 +340,7 @@ Each project gets its own isolated container named `opencode-sandbox-<SANDBOX_ID
 ~/.opencode-sandbox/
 └── my-project-a3f92c/
     ├── opencode-password       # Generated server password (owner-only permissions)
+    ├── opencode-port           # Validated OpenCode HTTP port
     ├── mise.toml               # Copied from project root at build time
     ├── squid.conf              # Copied from opencode-sandbox repo at build time
     ├── squid-whitelist.txt     # Extracted from http-domain-whitelist at build time

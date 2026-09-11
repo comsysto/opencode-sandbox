@@ -69,6 +69,8 @@ export NO_PROXY="${_no_proxy_hosts}"
 # ---------------------------------------------------------------------------
 OPENCODE_SERVER_PASSWORD=$(cat /opencode-password)
 export OPENCODE_SERVER_PASSWORD
+: "${OPENCODE_PORT:=4096}"
+export OPENCODE_PORT
 
 # ---------------------------------------------------------------------------
 # Docker socket: match GID of mounted socket so dev user can access it
@@ -91,5 +93,5 @@ exec gosu dev bash -c '
   : "${WORKSPACE_DIR:?WORKSPACE_DIR is not set — was the container built without the WORKSPACE_DIR build arg?}"
   mise trust --ignore "${WORKSPACE_DIR}/mise.toml"
   eval "$(mise activate --shell bash)"
-  exec "$(mise where github:anomalyco/opencode)/opencode" web --mdns
+  exec "$(mise where github:anomalyco/opencode)/opencode" web --mdns --port "${OPENCODE_PORT}"
 '
