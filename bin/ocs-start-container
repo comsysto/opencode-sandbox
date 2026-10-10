@@ -169,8 +169,21 @@ else
   fi
 fi
 
+# Rootless Podman maps the host user to root inside the container by default, so the
+# unprivileged "dev" user (built with the host UID/GID) cannot read the bind-mounted
+# project directory or write to the state directory. That surfaces as mise reporting
+# "Path does not exist: .../mise.toml" and opencode failing with EACCES on mkdir.
+# keep-id maps the host UID/GID to the same IDs inside the container, and SELinux
+# label separation is disabled for the bind mounts (otherwise access is denied on
+# SELinux hosts such as Fedora/RHEL).
+runtime_flags=(--security-opt label=disable)
+if [[ "${CONTAINER_RUNTIME}" == "podman" ]]; then
+  runtime_flags+=(--userns "keep-id:uid=$(id -u),gid=$(id -g)")
+fi
+
 "${CONTAINER_RUNTIME}" run --rm --init -it --cap-add NET_ADMIN \
   ${add_host_arg:+"${add_host_arg}"} \
+  "${runtime_flags[@]+"${runtime_flags[@]}"}" \
   --name "${CONTAINER_NAME}" \
   -e "OPENCODE_PORT=${PORT}" \
   -p "${LOCALHOST}:${PORT}:${PORT}" \

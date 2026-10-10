@@ -84,13 +84,30 @@ if [[ -S /var/run/docker.sock ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Start OpenCode as the dev user (gosu drops root, env is inherited)
+# Choose the user to run OpenCode as.
+# Normally this is the unprivileged dev user (gosu drops root, env is inherited).
+# With rootless Docker (or any user-namespace setup without keep-id) the host user is
+# mapped to root inside the container, so dev cannot read the mounted project or write
+# the state directory. In that case root *is* the host user, so run as root with the
+# dev home directory instead.
 # ---------------------------------------------------------------------------
 echo ">> start opencode"
-# SC2016: single quotes are intentional — expressions must expand in the dev user's shell, not root's
+if gosu dev test -r "${WORKSPACE_DIR}/mise.toml" && gosu dev test -w /home/dev/.local/share/opencode; then
+  RUN_AS=(gosu dev)
+else
+  echo "WARNING: user dev cannot access the mounted workspace/state (user namespace mapping or SELinux?)." >&2
+  echo "         Falling back to running opencode as the container's root user (= your host user in rootless mode)." >&2
+  export HOME=/home/dev
+  RUN_AS=()
+fi
+# SC2016: single quotes are intentional — expressions must expand in the target user's shell, not this one
 # shellcheck disable=SC2016
-exec gosu dev bash -c '
+exec "${RUN_AS[@]+"${RUN_AS[@]}"}" bash -c '
   : "${WORKSPACE_DIR:?WORKSPACE_DIR is not set — was the container built without the WORKSPACE_DIR build arg?}"
+  if [[ ! -r "${WORKSPACE_DIR}/mise.toml" ]]; then
+    echo "ERROR: ${WORKSPACE_DIR}/mise.toml is not readable by user $(id -un) ($(id -u):$(id -g))." >&2
+    exit 1
+  fi
   mise trust --ignore "${WORKSPACE_DIR}/mise.toml"
   eval "$(mise activate --shell bash)"
   exec "$(mise where github:anomalyco/opencode)/opencode" web --mdns --port "${OPENCODE_PORT}"
